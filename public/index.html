@@ -199,6 +199,7 @@
             <button
               class="font-button-text text-button-text text-destructive-text border border-border-subtle rounded-lg px-3 py-1.5 hover:bg-destructive-hover-bg hover:border-destructive-border transition-colors flex items-center gap-1.5 disabled:text-zinc-600 disabled:pointer-events-none"
               id="bulkDeleteBtn"
+              onclick="executeBulkDelete()"
               disabled
             >
               <span class="material-symbols-outlined text-[16px]">delete</span>
@@ -425,7 +426,6 @@
           // Add all currently displayed unused files to the Set
           // (Assuming 'unusedFiles' is your array of current files)
           unusedFiles.forEach((file) => selectedFiles.add(file));
-          console.log(selectedFiles);
         }
 
         // Visually check/uncheck every checkbox in the list
@@ -460,6 +460,39 @@
           // Disabled Gray Styling
           bulkDeleteButton.className =
             "font-button-text text-button-text text-destructive-text border border-border-subtle rounded-lg px-3 py-1.5 hover:bg-destructive-hover-bg hover:border-destructive-border transition-colors flex items-center gap-1.5 disabled:text-zinc-600 disabled:pointer-events-none";
+        }
+      }
+
+      // executes bulk delete
+      async function executeBulkDelete() {
+        console.log(unusedFiles);
+        return;
+
+        if (selectedFiles.size === 0) return;
+
+        const filesArray = Array.from(selectedFiles);
+
+        if (!confirm(`Permanently delete ${filesArray.length} files?\nThis cannot be undone.`))
+          return;
+
+        try {
+          const res = await fetch("/api/knip", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filePaths: filesArray }), // Send the array!
+          });
+
+          if (res.ok) {
+            // Clear selections and refresh your UI
+            selectedFiles.clear();
+            updateSelectAllUI();
+            updateBulkDeleteButton();
+            // Re-fetch or manually remove deleted items from your unusedFiles state
+          } else {
+            alert("Failed to delete some files.");
+          }
+        } catch (err) {
+          alert("Error connecting to server.");
         }
       }
 

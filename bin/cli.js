@@ -64,20 +64,39 @@ app.get("/api/knip", async (req, res) => {
   }
 });
 
-// --- DELETE: Trash the file ---
+// --- DELETE: Trash the file(s) ---
 app.delete("/api/knip", async (req, res) => {
   try {
-    const { filePath } = req.body;
-    const fullPath = path.join(process.cwd(), filePath);
+    // 1. Support both single deletion (filePath) AND bulk deletion (filePaths)
+    const pathsToDelete = req.body.filePaths || (req.body.filePath ? [req.body.filePath] : []);
 
-    if (!fullPath.startsWith(process.cwd())) {
-      return res.status(400).json({ error: "Invalid path" });
+    if (pathsToDelete.length === 0) {
+      return res.status(400).json({ error: "No file paths provided" });
     }
 
-    await fs.unlink(fullPath);
-    res.json({ success: true });
+    let deletedCount = 0;
+
+    // 2. Loop through the array and physically delete them
+    for (const file of pathsToDelete) {
+      const fullPath = path.join(process.cwd(), file);
+
+      // 3. Security check: Ensure they aren't trying to delete system files outside the project
+      if (fullPath.startsWith(process.cwd())) {
+        try {
+          await fs.unlink(fullPath);
+          deletedCount++;
+        } catch (unlinkErr) {
+          // If a specific file fails (e.g., already deleted), just log it and move to the next one
+          console.log(`⚠️ Skipped or failed to delete: ${file}`);
+        }
+      }
+    }
+
+    // 4. Send back success and how many files were actually trashed
+    res.json({ success: true, deletedCount });
   } catch (error) {
-    res.status(500).json({ error: "Failed to delete file" });
+    console.error("Server Delete Error:", error);
+    res.status(500).json({ error: "Failed to process deletion request" });
   }
 });
 
