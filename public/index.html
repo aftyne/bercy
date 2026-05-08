@@ -147,163 +147,173 @@
     </script>
   </head>
   <body class="bg-app-bg text-on-background min-h-screen antialiased flex flex-col items-center">
-    <main class="w-full max-w-container-max-width px-4 pt-12 pb-24 md:pb-12">
-      <!-- Page Header -->
-      <div class="mb-section-gap flex items-center gap-3">
-        <span
-          class="material-symbols-outlined text-primary text-3xl"
-          style="font-variation-settings: &quot;FILL&quot; 1"
-          >folder_delete</span
-        >
-        <h1 class="font-page-title text-page-title text-primary">Unused Files</h1>
-      </div>
-      <!-- Main Card Container -->
-      <div
-        class="bg-zinc-900 border border-border-subtle rounded-xl overflow-hidden shadow-lg flex flex-col"
-      >
-        <!-- Tabs Header -->
-        <div class="flex border-b border-border-subtle bg-surface-variant/30">
-          <button
-            class="flex-1 py-3 px-4 font-card-header text-card-header text-primary border-b-2 border-primary bg-card-bg transition-colors flex items-center justify-center gap-2"
-          >
-            <span class="material-symbols-outlined text-[18px]">folder_delete</span>
-            Unused Files <span id="unused-files-count">(0)</span>
-          </button>
-          <button
-            class="flex-1 py-3 px-4 font-card-header text-card-header text-on-surface-variant border-b-2 border-transparent hover:text-primary hover:bg-item-hover transition-colors flex items-center justify-center gap-2"
-          >
-            <span class="material-symbols-outlined text-[18px]">visibility_off</span>
-            Ignored Files (2)
-          </button>
+    <main class="w-full max-w-4xl flex flex-col h-full space-y-8 px-4 pt-10 pb-24 md:pb-12">
+      <!-- Header Section -->
+      <header class="flex items-end justify-between px-2">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <div
+              class="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]"
+            ></div>
+            <span class="text-xs font-mono tracking-widest text-zinc-500 uppercase"
+              >System Dashboard</span
+            >
+          </div>
+          <h1 class="text-3xl font-semibold text-zinc-100 tracking-tight italic">Next-Sweep</h1>
         </div>
-        <!-- List Header Actions -->
+        <div class="text-right">
+          <p class="text-xs text-zinc-500 uppercase tracking-tighter">Project Health</p>
+          <p class="text-sm text-zinc-300 font-mono">Optimized &bull; 94%</p>
+        </div>
+      </header>
+
+      <!-- Main Interface Card -->
+      <section
+        class="bg-zinc-900 border border-zinc-800/50 rounded-2xl overflow-hidden shadow-2xl flex flex-col flex-1"
+      >
+        <!-- Navigation Tabs -->
+        <nav class="flex border-b border-zinc-800/50 bg-zinc-900/50">
+          <button
+            id="tab-unused"
+            class="flex-1 py-4 text-sm font-medium transition-all border-b-2 border-indigo-500 text-zinc-100"
+          >
+            Unused Files
+            <span id="unused-files-count" class="ml-1 text-zinc-500 font-normal">(0)</span>
+            <span id="unused-count" class="hidden"></span>
+            <!-- Preserving requested ID -->
+          </button>
+          <button
+            id="tab-ignored"
+            class="flex-1 py-4 text-sm font-medium transition-all border-b-2 border-transparent text-zinc-500 hover:text-zinc-300"
+          >
+            Ignored Files <span id="ignored-count" class="ml-1 text-zinc-600 font-normal">(2)</span>
+          </button>
+        </nav>
+
+        <!-- Contextual Action Bar -->
         <div
-          class="bg-card-bg border-b border-border-subtle p-card-padding-y px-card-padding-x flex items-center justify-between sticky top-0 z-10"
+          class="px-4 py-4 flex items-center justify-between bg-zinc-900/30 border-b border-zinc-800/30 sticky top-0 z-10"
         >
           <div class="flex items-center gap-3">
             <input
-              class="rounded bg-code-block-bg border-border-subtle text-outline-variant focus:ring-0 focus:ring-offset-0 w-4 h-4 cursor-pointer"
               id="selectAllCheckbox"
-              onchange="toggleSelectAll(this)"
               type="checkbox"
+              class="w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-indigo-500 focus:ring-0 focus:ring-offset-0 cursor-pointer accent-indigo-500"
+              onchange="toggleSelectAll(this)"
             />
-            <span class="font-metadata text-metadata text-on-surface-variant">Select All</span>
-          </div>
-          <div class="flex gap-inline-gap">
-            <button
-              class="font-button-text text-button-text text-on-surface-variant border border-border-subtle rounded-lg px-3 py-1.5 hover:bg-item-hover hover:text-primary transition-colors flex items-center gap-1.5"
+            <label
+              for="selectAllCheckbox"
+              class="text-xs font-medium text-zinc-400 uppercase tracking-wide cursor-pointer hidden sm:block"
+              >Bulk Actions</label
             >
-              <span class="material-symbols-outlined text-[16px]">visibility_off</span>
-              Ignore
+            <label
+              for="selectAllCheckbox"
+              class="text-xs font-medium text-zinc-400 uppercase tracking-wide cursor-pointer sm:hidden"
+              >All</label
+            >
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button
+              class="px-4 py-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-md transition-colors"
+            >
+              Ignore All
             </button>
             <button
-              class="font-button-text text-button-text text-destructive-text border border-border-subtle rounded-lg px-3 py-1.5 hover:bg-destructive-hover-bg hover:border-destructive-border transition-colors flex items-center gap-1.5 disabled:text-zinc-600 disabled:pointer-events-none"
               id="bulkDeleteBtn"
               onclick="executeBulkDelete()"
               disabled
+              class="px-4 py-1.5 text-xs font-medium rounded-md transition-all border border-red-500/20 text-red-400 bg-red-500/5 hover:bg-red-500/15 disabled:text-zinc-500 disabled:bg-zinc-800/30 disabled:border-transparent disabled:pointer-events-none"
             >
-              <span class="material-symbols-outlined text-[16px]">delete</span>
-              Delete Selected <span id="delete-selected-count">(0)</span>
+              Delete Selected <span id="delete-selected-count" class="ml-1 opacity-60">(0)</span>
             </button>
           </div>
         </div>
-        <!-- File List -->
-        <ul class="divide-y divide-border-subtle bg-card-bg" id="unused-files-container">
-          <li
-            class="px-6 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-pulse loading-skeleton"
-          >
-            <div class="flex items-center gap-4 flex-1">
-              <!-- Checkbox Skeleton -->
-              <div class="w-5 h-5 bg-zinc-700 rounded flex-shrink-0"></div>
-              <!-- Path Skeleton -->
-              <div class="space-y-2 flex-1">
-                <div class="h-4 w-3/4 bg-zinc-700 rounded"></div>
-                <div class="h-3 w-1/4 bg-zinc-700/50 rounded"></div>
-              </div>
-            </div>
-            <!-- Actions Skeleton -->
-            <div class="flex items-center gap-2">
-              <div class="w-20 h-9 bg-zinc-700 rounded-lg"></div>
-              <div class="w-24 h-9 bg-zinc-700 rounded-lg"></div>
-            </div>
-          </li>
-          <li
-            class="px-6 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-pulse loading-skeleton"
-          >
-            <div class="flex items-center gap-4 flex-1">
-              <!-- Checkbox Skeleton -->
-              <div class="w-5 h-5 bg-zinc-700 rounded flex-shrink-0"></div>
-              <!-- Path Skeleton -->
-              <div class="space-y-2 flex-1">
-                <div class="h-4 w-3/4 bg-zinc-700 rounded"></div>
-                <div class="h-3 w-1/4 bg-zinc-700/50 rounded"></div>
-              </div>
-            </div>
-            <!-- Actions Skeleton -->
-            <div class="flex items-center gap-2">
-              <div class="w-20 h-9 bg-zinc-700 rounded-lg"></div>
-              <div class="w-24 h-9 bg-zinc-700 rounded-lg"></div>
-            </div>
-          </li>
-          <li
-            class="px-6 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-pulse loading-skeleton"
-          >
-            <div class="flex items-center gap-4 flex-1">
-              <!-- Checkbox Skeleton -->
-              <div class="w-5 h-5 bg-zinc-700 rounded flex-shrink-0"></div>
-              <!-- Path Skeleton -->
-              <div class="space-y-2 flex-1">
-                <div class="h-4 w-3/4 bg-zinc-700 rounded"></div>
-                <div class="h-3 w-1/4 bg-zinc-700/50 rounded"></div>
-              </div>
-            </div>
-            <!-- Actions Skeleton -->
-            <div class="flex items-center gap-2">
-              <div class="w-20 h-9 bg-zinc-700 rounded-lg"></div>
-              <div class="w-24 h-9 bg-zinc-700 rounded-lg"></div>
-            </div>
-          </li>
-          <!-- <li
-            class="p-item-padding hover:bg-item-hover transition-colors group flex flex-col md:flex-row md:items-center justify-between gap-4"
-          >
-            <div class="flex items-start gap-3 w-full md:w-auto overflow-hidden">
-              <input
-                class="mt-1 rounded bg-code-block-bg border-border-subtle text-outline-variant focus:ring-0 focus:ring-offset-0 w-4 h-4 cursor-pointer shrink-0"
-                type="checkbox"
-              />
-              <div class="flex flex-col gap-1 min-w-0 w-full">
-                <div
-                  class="bg-code-block-bg rounded px-2 py-1 border border-surface-variant truncate w-full md:max-w-lg"
-                >
-                  <code class="font-mono text-file-path text-primary break-all"
-                    >src/components/old_header_v1.js</code
-                  >
-                </div>
-                <span class="font-metadata text-metadata text-on-surface-variant"
-                  >Last accessed: 14 months ago • 12 KB</span
-                >
-              </div>
-            </div>
-            <div
-              class="flex gap-2 shrink-0 md:opacity-0 group-hover:opacity-100 transition-opacity justify-end ml-7 md:ml-0"
+
+        <!-- File List Viewport -->
+        <div class="flex-1 overflow-hidden" id="file-list-viewport">
+          <ul id="unused-files-container" class="divide-y divide-zinc-800/40">
+            <li class="hidden" id="file-list"></li>
+            <!-- Preserving requested ID -->
+
+            <!-- Skeletons -->
+            <li
+              class="group flex items-center justify-between px-4 py-4 hover:bg-zinc-800/30 transition-colors animate-pulse loading-skeleton"
             >
-              <button
-                class="font-button-text text-button-text text-on-surface-variant border border-border-subtle rounded-lg px-3 py-1.5 hover:bg-item-hover hover:text-primary transition-colors"
-                title="Ignore file"
-              >
-                <span class="material-symbols-outlined text-[18px] leading-none block"
-                  >visibility_off</span
-                >
-              </button>
-              <button
-                class="font-button-text text-button-text text-destructive-text border border-border-subtle rounded-lg px-3 py-1.5 hover:bg-destructive-hover-bg hover:border-destructive-border transition-colors"
-                title="Delete file"
-              >
-                <span class="material-symbols-outlined text-[18px] leading-none block">delete</span>
-              </button>
-            </div>
-          </li> -->
-        </ul>
+              <div class="flex items-start gap-4 flex-1">
+                <div class="w-4 h-4 rounded border-zinc-800 bg-zinc-950 flex-shrink-0"></div>
+                <div class="flex flex-col gap-1 w-full max-w-sm">
+                  <div class="h-5 w-full bg-zinc-800 rounded-md"></div>
+                  <div class="h-3 w-1/2 bg-zinc-800/50 rounded mt-1"></div>
+                </div>
+              </div>
+              <div class="flex gap-1 opacity-50">
+                <div class="w-8 h-8 rounded-md bg-zinc-800"></div>
+                <div class="w-8 h-8 rounded-md bg-zinc-800"></div>
+              </div>
+            </li>
+            <li
+              class="group flex items-center justify-between px-4 py-4 hover:bg-zinc-800/30 transition-colors animate-pulse loading-skeleton"
+            >
+              <div class="flex items-start gap-4 flex-1">
+                <div class="w-4 h-4 rounded border-zinc-800 bg-zinc-950 flex-shrink-0"></div>
+                <div class="flex flex-col gap-1 w-full max-w-md">
+                  <div class="h-5 w-full bg-zinc-800 rounded-md"></div>
+                  <div class="h-3 w-1/3 bg-zinc-800/50 rounded mt-1"></div>
+                </div>
+              </div>
+              <div class="flex gap-1 opacity-50">
+                <div class="w-8 h-8 rounded-md bg-zinc-800"></div>
+                <div class="w-8 h-8 rounded-md bg-zinc-800"></div>
+              </div>
+            </li>
+            <li
+              class="group flex items-center justify-between px-4 py-4 hover:bg-zinc-800/30 transition-colors animate-pulse loading-skeleton"
+            >
+              <div class="flex items-start gap-4 flex-1">
+                <div class="w-4 h-4 rounded border-zinc-800 bg-zinc-950 flex-shrink-0"></div>
+                <div class="flex flex-col gap-1 w-full max-w-xs">
+                  <div class="h-5 w-full bg-zinc-800 rounded-md"></div>
+                  <div class="h-3 w-3/4 bg-zinc-800/50 rounded mt-1"></div>
+                </div>
+              </div>
+              <div class="flex gap-1 opacity-50">
+                <div class="w-8 h-8 rounded-md bg-zinc-800"></div>
+                <div class="w-8 h-8 rounded-md bg-zinc-800"></div>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Empty State -->
+        <div
+          id="empty-state"
+          class="hidden flex-col items-center justify-center h-64 border-2 border-dashed border-emerald-500/10 rounded-xl m-6"
+        >
+          <p class="text-emerald-400 text-sm font-medium">Workspace is clean</p>
+          <p class="text-zinc-600 text-xs mt-1">No unused files were found in this directory.</p>
+        </div>
+
+        <!-- Footer Status -->
+        <footer
+          class="px-6 py-3 border-t border-zinc-800/50 bg-zinc-900/50 flex justify-between items-center text-[11px] uppercase tracking-widest text-zinc-600"
+        >
+          <span>Status: Scanning Idle</span>
+          <span>Build Target: Next.js 14+</span>
+        </footer>
+      </section>
+
+      <!-- Toast Notification Container -->
+      <div
+        id="toast-container"
+        class="fixed bottom-12 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 opacity-0 pointer-events-none translate-y-4"
+      >
+        <div
+          class="flex items-center gap-3 bg-zinc-800 text-zinc-100 text-sm px-5 py-2.5 rounded-full shadow-2xl border border-zinc-700/50"
+        >
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <span id="toast-message">Message here</span>
+        </div>
       </div>
     </main>
 
@@ -465,9 +475,6 @@
 
       // executes bulk delete
       async function executeBulkDelete() {
-        console.log(unusedFiles);
-        return;
-
         if (selectedFiles.size === 0) return;
 
         const filesArray = Array.from(selectedFiles);
@@ -483,11 +490,35 @@
           });
 
           if (res.ok) {
-            // Clear selections and refresh your UI
+            // 1. Remove the deleted files from your local JavaScript array
+            unusedFiles = unusedFiles.filter((file) => !selectedFiles.has(file));
+
+            // 2. Remove the specific HTML rows from the DOM
+            selectedFiles.forEach((file) => {
+              // Find the checkbox with this file's value, then find its parent <li>
+              const checkbox = document.querySelector(`input[value="${file}"]`);
+              if (checkbox) {
+                const row = checkbox.closest("li");
+                if (row) row.remove();
+              }
+            });
+
+            // 3. Update the total count in the header
+            const countElement = document.getElementById("unused-count");
+            if (countElement) {
+              countElement.innerText = unusedFiles.length;
+            }
+
+            // 4. Clear the selections and reset the UI buttons
             selectedFiles.clear();
             updateSelectAllUI();
             updateBulkDeleteButton();
-            // Re-fetch or manually remove deleted items from your unusedFiles state
+
+            // 5. Check if we just deleted the very last file!
+            if (unusedFiles.length === 0) {
+              document.getElementById("file-list").classList.add("hidden");
+              document.getElementById("empty-state").classList.remove("hidden");
+            }
           } else {
             alert("Failed to delete some files.");
           }
