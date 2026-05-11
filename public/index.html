@@ -150,21 +150,11 @@
     <main class="w-full max-w-4xl flex flex-col h-full space-y-8 px-4 pt-10 pb-24 md:pb-12">
       <!-- Header Section -->
       <header class="flex items-end justify-between px-2">
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <div
-              class="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]"
-            ></div>
-            <span class="text-xs font-mono tracking-widest text-zinc-500 uppercase"
-              >System Dashboard</span
-            >
-          </div>
-          <h1 class="text-3xl font-semibold text-zinc-100 tracking-tight italic">Next-Sweep</h1>
-        </div>
-        <div class="text-right">
+        <h1 class="text-3xl font-semibold text-zinc-100 tracking-tight">Bercy</h1>
+        <!-- <div class="text-right">
           <p class="text-xs text-zinc-500 uppercase tracking-tighter">Project Health</p>
           <p class="text-sm text-zinc-300 font-mono">Optimized &bull; 94%</p>
-        </div>
+        </div> -->
       </header>
 
       <!-- Main Interface Card -->
@@ -178,7 +168,8 @@
             class="flex-1 py-4 text-sm font-medium transition-all border-b-2 border-indigo-500 text-zinc-100"
           >
             Unused Files
-            <span id="unused-files-count" class="ml-1 text-zinc-500 font-normal">(0)</span>
+            <span class="text-zinc-500 font-normal">(<span id="unused-files-count">0</span>)</span>
+            <!-- <span id="unused-files-count" class="text-zinc-500 font-normal">0</span> -->
             <span id="unused-count" class="hidden"></span>
             <!-- Preserving requested ID -->
           </button>
@@ -221,11 +212,11 @@
             </button>
             <button
               id="bulkDeleteBtn"
-              onclick="executeBulkDelete()"
+              onclick="promptBulkDelete()"
               disabled
               class="px-4 py-1.5 text-xs font-medium rounded-md transition-all border border-red-500/20 text-red-400 bg-red-500/5 hover:bg-red-500/15 disabled:text-zinc-500 disabled:bg-zinc-800/30 disabled:border-transparent disabled:pointer-events-none"
             >
-              Delete Selected <span id="delete-selected-count" class="ml-1 opacity-60">(0)</span>
+              Delete Selected <span id="delete-selected-count" class="ml-1">(0)</span>
             </button>
           </div>
         </div>
@@ -317,12 +308,52 @@
       </div>
     </main>
 
+    <div
+      id="delete-modal"
+      class="fixed inset-0 z-[60] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300"
+    >
+      <div class="absolute inset-0 bg-zinc-950/80" id="delete-modal-backdrop"></div>
+      <div
+        class="relative bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl p-6 w-full max-w-sm transform scale-95 transition-transform duration-300"
+        id="delete-modal-panel"
+      >
+        <div class="flex items-center gap-3 mb-4">
+          <div
+            class="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20 shrink-0"
+          >
+            <span class="material-symbols-outlined text-red-400 text-xl">warning</span>
+          </div>
+          <h3 class="text-lg font-semibold text-zinc-100" id="delete-modal-title">Delete File</h3>
+        </div>
+        <p class="text-sm text-zinc-400 mb-6" id="delete-modal-message">
+          Are you sure you want to delete this file? This action cannot be undone.
+        </p>
+        <div class="flex items-center justify-end gap-3">
+          <button
+            id="delete-modal-cancel"
+            onclick="hideModal()"
+            class="px-4 py-2 text-sm font-medium text-zinc-300 hover:text-zinc-100 bg-zinc-800/50 hover:bg-zinc-800 rounded-lg transition-colors border border-transparent hover:border-zinc-700"
+          >
+            Cancel
+          </button>
+          <button
+            id="delete-modal-confirm"
+            class="px-4 py-2 text-sm font-medium text-white bg-red-500/80 hover:bg-red-500 rounded-lg transition-colors border border-red-600 shadow-[0_0_15px_rgba(239,68,68,0.2)]"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script>
       const unusedFilesContainer = document.getElementById("unused-files-container");
       const skeletons = document.querySelectorAll(".loading-skeleton");
       const unusedFilesCount = document.getElementById("unused-files-count");
       const bulkDeleteButton = document.getElementById("bulkDeleteBtn");
       const bulkDeleteSelectedCount = document.getElementById("delete-selected-count");
+      const toast = document.getElementById("toast-container");
+      const msg = document.getElementById("toast-message");
 
       let selectedFiles = new Set();
       let unusedFiles = [];
@@ -339,7 +370,7 @@
             skeleton.classList.add("hidden");
           });
 
-          unusedFilesCount.innerText = `(${data.files.length})`;
+          unusedFilesCount.innerText = data.files.length;
 
           data.files.forEach((file) => {
             const li = document.createElement("li");
@@ -361,7 +392,7 @@
                   >
                 </div>
                 <span class="font-metadata text-metadata text-on-surface-variant"
-                  >Last accessed: 14 months ago • 12 KB</span
+                  >Size: 12 KB</span
                 >
               </div>
             </div>
@@ -379,7 +410,7 @@
               <button
                 class="font-button-text text-button-text text-destructive-text border border-border-subtle rounded-lg px-3 py-1.5 hover:bg-destructive-hover-bg hover:border-destructive-border transition-colors"
                 title="Delete file"
-                onclick="deleteFile('${file}', this)"
+                onclick="promptDeleteFile('${file}', this)"
               >
                 <span class="material-symbols-outlined text-[18px] leading-none block">delete</span>
               </button>
@@ -393,9 +424,43 @@
         }
       }
 
-      async function deleteFile(filePath, btnElement) {
-        if (!confirm(`Permanently delete this file?\n\n${filePath}`)) return;
+      let confirmActionCallback = null;
 
+      function showModal(title, message, onConfirm) {
+        const modal = document.getElementById("delete-modal");
+        const panel = document.getElementById("delete-modal-panel");
+        document.getElementById("delete-modal-title").innerText = title;
+        document.getElementById("delete-modal-message").innerText = message;
+        confirmActionCallback = onConfirm;
+
+        modal.classList.remove("opacity-0", "pointer-events-none");
+        panel.classList.remove("scale-95");
+        panel.classList.add("scale-100");
+      }
+
+      function hideModal() {
+        const modal = document.getElementById("delete-modal");
+        const panel = document.getElementById("delete-modal-panel");
+
+        modal.classList.add("opacity-0", "pointer-events-none");
+        panel.classList.remove("scale-100");
+        panel.classList.add("scale-95");
+        confirmActionCallback = null;
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const backdrop = document.getElementById("delete-modal-backdrop");
+        if (backdrop) backdrop.addEventListener("click", hideModal);
+
+        const confirmBtn = document.getElementById("delete-modal-confirm");
+        if (confirmBtn)
+          confirmBtn.addEventListener("click", () => {
+            if (confirmActionCallback) confirmActionCallback();
+            hideModal();
+          });
+      });
+
+      async function deleteFile(filePath, btnElement) {
         try {
           const res = await fetch("/api/knip", {
             method: "DELETE",
@@ -406,12 +471,50 @@
           if (res.ok) {
             btnElement.closest("li").remove();
             unusedFilesCount.innerText = parseInt(unusedFilesCount.innerText) - 1;
+
+            const li = btnElement.closest("li");
+            if (li) li.remove();
+
+            if (toast && msg) {
+              msg.innerText = filePath.split("/").pop() + " deleted";
+              toast.classList.remove("opacity-0", "pointer-events-none", "translate-y-4");
+              setTimeout(
+                () => toast.classList.add("opacity-0", "pointer-events-none", "translate-y-4"),
+                3000,
+              );
+            }
           } else {
             alert("Failed to delete file.");
           }
         } catch (err) {
           alert("Error connecting to server.");
         }
+      }
+
+      function promptDeleteFile(file, btn) {
+        showModal(
+          "Delete File",
+          `Are you sure you want to delete "${file.split("/").pop()}"? This action cannot be undone.`,
+          () => {
+            if (typeof deleteFile === "function") {
+              deleteFile(file, btn);
+            } else {
+              // Mock cleanup for preview
+              const li = btn.closest("li");
+              if (li) li.remove();
+              const toast = document.getElementById("toast-container");
+              const msg = document.getElementById("toast-message");
+              if (toast && msg) {
+                msg.innerText = file.split("/").pop() + " deleted";
+                toast.classList.remove("opacity-0", "pointer-events-none", "translate-y-4");
+                setTimeout(
+                  () => toast.classList.add("opacity-0", "pointer-events-none", "translate-y-4"),
+                  3000,
+                );
+              }
+            }
+          },
+        );
       }
 
       // 2. Individual Checkbox Toggle
@@ -463,14 +566,40 @@
           bulkDeleteSelectedCount.innerText = `(${selectedFiles.size})`;
           // Active Red Styling
           bulkDeleteButton.className =
-            "font-button-text text-button-text text-destructive-text border border-border-subtle rounded-lg px-3 py-1.5 hover:bg-destructive-hover-bg hover:border-destructive-border transition-colors flex items-center gap-1.5 disabled:text-zinc-600 disabled:pointer-events-none";
+            "px-4 py-1.5 text-xs font-medium rounded-md transition-all border border-red-500/20 text-red-400 bg-red-500/5 hover:bg-red-500/15 disabled:text-zinc-500 disabled:bg-zinc-800/30 disabled:border-transparent disabled:pointer-events-none";
         } else {
           bulkDeleteButton.disabled = true;
           bulkDeleteSelectedCount.innerText = `(${selectedFiles.size})`;
           // Disabled Gray Styling
           bulkDeleteButton.className =
-            "font-button-text text-button-text text-destructive-text border border-border-subtle rounded-lg px-3 py-1.5 hover:bg-destructive-hover-bg hover:border-destructive-border transition-colors flex items-center gap-1.5 disabled:text-zinc-600 disabled:pointer-events-none";
+            "px-4 py-1.5 text-xs font-medium rounded-md transition-all border border-red-500/20 text-red-400 bg-red-500/5 hover:bg-red-500/15 disabled:text-zinc-500 disabled:bg-zinc-800/30 disabled:border-transparent disabled:pointer-events-none";
         }
+      }
+
+      function promptBulkDelete() {
+        // Fallback size if selectedFiles is unavailable
+        let count = typeof selectedFiles !== "undefined" ? selectedFiles.size : 0;
+        showModal(
+          "Delete Selected Files",
+          `Are you sure you want to delete ${count} file${count === 1 ? "" : "s"}? This action cannot be undone.`,
+          () => {
+            if (typeof executeBulkDelete === "function") {
+              executeBulkDelete();
+            } else {
+              // Mock cleanup for preview
+              const toast = document.getElementById("toast-container");
+              const msg = document.getElementById("toast-message");
+              if (toast && msg) {
+                msg.innerText = count + " files deleted";
+                toast.classList.remove("opacity-0", "pointer-events-none", "translate-y-4");
+                setTimeout(
+                  () => toast.classList.add("opacity-0", "pointer-events-none", "translate-y-4"),
+                  3000,
+                );
+              }
+            }
+          },
+        );
       }
 
       // executes bulk delete
@@ -478,9 +607,6 @@
         if (selectedFiles.size === 0) return;
 
         const filesArray = Array.from(selectedFiles);
-
-        if (!confirm(`Permanently delete ${filesArray.length} files?\nThis cannot be undone.`))
-          return;
 
         try {
           const res = await fetch("/api/knip", {
@@ -507,6 +633,15 @@
             const countElement = document.getElementById("unused-count");
             if (countElement) {
               countElement.innerText = unusedFiles.length;
+            }
+
+            if (toast && msg) {
+              msg.innerText = selectedFiles.size + " files deleted";
+              toast.classList.remove("opacity-0", "pointer-events-none", "translate-y-4");
+              setTimeout(
+                () => toast.classList.add("opacity-0", "pointer-events-none", "translate-y-4"),
+                3000,
+              );
             }
 
             // 4. Clear the selections and reset the UI buttons
