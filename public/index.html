@@ -195,7 +195,7 @@
             <label
               for="selectAllCheckbox"
               class="text-xs font-medium text-zinc-400 uppercase tracking-wide cursor-pointer hidden sm:block"
-              >Bulk Actions</label
+              >Select All</label
             >
             <label
               for="selectAllCheckbox"
@@ -234,8 +234,7 @@
               <div class="flex items-start gap-4 flex-1">
                 <div class="w-4 h-4 rounded border-zinc-800 bg-zinc-950 flex-shrink-0"></div>
                 <div class="flex flex-col gap-1 w-full max-w-sm">
-                  <div class="h-5 w-full bg-zinc-800 rounded-md"></div>
-                  <div class="h-3 w-1/2 bg-zinc-800/50 rounded mt-1"></div>
+                  <div class="h-7 w-full bg-zinc-800 rounded-md"></div>
                 </div>
               </div>
               <div class="flex gap-1 opacity-50">
@@ -249,8 +248,7 @@
               <div class="flex items-start gap-4 flex-1">
                 <div class="w-4 h-4 rounded border-zinc-800 bg-zinc-950 flex-shrink-0"></div>
                 <div class="flex flex-col gap-1 w-full max-w-md">
-                  <div class="h-5 w-full bg-zinc-800 rounded-md"></div>
-                  <div class="h-3 w-1/3 bg-zinc-800/50 rounded mt-1"></div>
+                  <div class="h-7 w-full bg-zinc-800 rounded-md"></div>
                 </div>
               </div>
               <div class="flex gap-1 opacity-50">
@@ -264,8 +262,7 @@
               <div class="flex items-start gap-4 flex-1">
                 <div class="w-4 h-4 rounded border-zinc-800 bg-zinc-950 flex-shrink-0"></div>
                 <div class="flex flex-col gap-1 w-full max-w-xs">
-                  <div class="h-5 w-full bg-zinc-800 rounded-md"></div>
-                  <div class="h-3 w-3/4 bg-zinc-800/50 rounded mt-1"></div>
+                  <div class="h-7 w-full bg-zinc-800 rounded-md"></div>
                 </div>
               </div>
               <div class="flex gap-1 opacity-50">
@@ -289,8 +286,12 @@
         <footer
           class="px-6 py-3 border-t border-zinc-800/50 bg-zinc-900/50 flex justify-between items-center text-[11px] uppercase tracking-widest text-zinc-600"
         >
-          <span>Status: Scanning Idle</span>
-          <span>Build Target: Next.js 14+</span>
+          <div class="flex items-center gap-2">
+            <div class="size-2 rounded-full bg-yellow-500 shrink-0" id="status-circle"></div>
+            <p class="text-zinc-400">Status: <span id="status-text">Scanning...</span></p>
+          </div>
+          <div class="h-4 w-40 bg-zinc-800/50 rounded" id="skeleton-framework-target"></div>
+          <p class="hidden" id="framework-target"></p>
         </footer>
       </section>
 
@@ -352,11 +353,32 @@
       const unusedFilesCount = document.getElementById("unused-files-count");
       const bulkDeleteButton = document.getElementById("bulkDeleteBtn");
       const bulkDeleteSelectedCount = document.getElementById("delete-selected-count");
+      const statusCircle = document.getElementById("status-circle");
+      const statusText = document.getElementById("status-text");
+      const frameworkTarget = document.getElementById("framework-target");
       const toast = document.getElementById("toast-container");
       const msg = document.getElementById("toast-message");
 
       let selectedFiles = new Set();
       let unusedFiles = [];
+
+      async function loadProjectMetadata() {
+        try {
+          const res = await fetch("/api/meta");
+          if (!res.ok) return;
+
+          const data = await res.json();
+
+          frameworkTarget.classList.remove("hidden");
+          frameworkTarget.innerText = `Target: ${data.framework} ${data.version}`;
+        } catch (err) {
+          console.error("Failed to load project metadata", err);
+        } finally {
+          document.getElementById("skeleton-framework-target").classList.add("hidden");
+        }
+      }
+
+      // Call this immediately when the page loads
 
       async function init() {
         try {
@@ -364,11 +386,6 @@
           const data = await res.json();
 
           unusedFiles = data.files;
-
-          skeletons.forEach((skeleton) => {
-            skeleton.classList.remove("flex");
-            skeleton.classList.add("hidden");
-          });
 
           unusedFilesCount.innerText = data.files.length;
 
@@ -379,21 +396,18 @@
             li.innerHTML = `
               <div class="flex items-start gap-3 w-full md:w-auto overflow-hidden">
               <input
-                class="mt-1 rounded bg-code-block-bg border-border-subtle text-outline-variant focus:ring-0 focus:ring-offset-0 w-4 h-4 cursor-pointer shrink-0 file-checkbox"
+                class="mt-1 rounded bg-code-block-bg border-border-subtle focus:ring-0 focus:ring-offset-0 w-4 h-4 cursor-pointer shrink-0 file-checkbox text-indigo-500 accent-indigo-500"
                 value="${file}" onchange="toggleFileSelection('${file}', this.checked)"
                 type="checkbox"
               />
               <div class="flex flex-col gap-1 min-w-0 w-full">
                 <div
-                  class="bg-code-block-bg rounded px-2 py-1 border border-surface-variant truncate w-full md:max-w-lg"
+                  class="bg-zinc-900 rounded-md px-4 py-1 border border-surface-variant truncate w-full md:max-w-lg"
                 >
                   <code class="font-mono text-file-path text-primary break-all"
                     >${file}</code
                   >
                 </div>
-                <span class="font-metadata text-metadata text-on-surface-variant"
-                  >Size: 12 KB</span
-                >
               </div>
             </div>
             <div
@@ -421,6 +435,15 @@
         } catch (err) {
           console.log(err);
           // alert("Failed to load files.");
+        } finally {
+          skeletons.forEach((skeleton) => {
+            skeleton.classList.remove("flex");
+            skeleton.classList.add("hidden");
+          });
+
+          statusCircle.classList.remove("bg-yellow-500");
+          statusCircle.classList.add("bg-emerald-500");
+          statusText.innerText = "Ready";
         }
       }
 
@@ -662,6 +685,7 @@
         }
       }
 
+      loadProjectMetadata();
       init();
     </script>
   </body>
