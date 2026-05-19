@@ -1,6 +1,6 @@
 {
   "name": "@aftyne/bercy",
-  "version": "1.0.1",
+  "version": "1.0.12",
   "description": "A local CLI utility to batch-delete unused files.",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
