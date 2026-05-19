@@ -1,5 +1,5 @@
 {
-  "name": "bercy",
+  "name": "@aftyne/bercy",
   "version": "1.0.0",
   "description": "A local CLI utility to batch-delete unused files.",
   "scripts": {
