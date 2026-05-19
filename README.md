@@ -10,7 +10,7 @@ Built on top of the powerful [Knip](https://knip.dev/) engine, Bercy spins up a 
 * **Framework Agnostic:** Automatically detects and displays your project's framework (Next.js, React, Vue, Nuxt, Node.js, etc.).
 * **Interactive Dashboard:** A minimalist, dark-themed UI to review unused files before deletion.
 * **Bulk Deletion:** Select multiple files and delete them in one batch.
-* **Secure by Design:** * Locked strictly to `127.0.0.1` to prevent local network exposure.
+* **Secure by Design:** Locked strictly to `127.0.0.1` to prevent local network exposure.
 * Built-in CSRF protection to block drive-by web attacks.
 * Aggressive path sanitization to prevent directory traversal outside your project.
 
