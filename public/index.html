@@ -263,7 +263,7 @@
         <!-- Empty State -->
         <div
           id="empty-state"
-          class="hidden flex flex-col items-center justify-center h-64 border-2 border-dashed border-emerald-500/10 rounded-xl m-6"
+          class="hidden flex-col items-center justify-center h-64 border-2 border-dashed border-emerald-500/10 rounded-xl m-6"
         >
           <p class="text-emerald-400 text-sm font-medium">Workspace is clean</p>
           <p class="text-zinc-600 text-xs mt-1">No unused files were found in this directory.</p>
@@ -373,6 +373,13 @@
           unusedFiles = data.files;
 
           unusedFilesCount.innerText = data.files.length;
+
+          if (data.files.length === 0) {
+            document.getElementById("file-list").classList.add("hidden");
+            document.getElementById("empty-state").classList.remove("hidden");
+            document.getElementById("empty-state").classList.add("flex");
+            return;
+          }
 
           data.files.forEach((file) => {
             const li = document.createElement("li");
@@ -640,6 +647,7 @@
             if (unusedFiles.length === 0) {
               document.getElementById("file-list").classList.add("hidden");
               document.getElementById("empty-state").classList.remove("hidden");
+              document.getElementById("empty-state").classList.add("flex");
             }
           } else {
             alert("Failed to delete some files.");
