@@ -148,20 +148,13 @@
   </head>
   <body class="bg-app-bg text-on-background min-h-screen antialiased flex flex-col items-center">
     <main class="w-full max-w-4xl flex flex-col h-full space-y-8 px-4 pt-10 pb-24 md:pb-12">
-      <!-- Header Section -->
       <header class="flex items-end justify-between px-2">
         <h1 class="text-3xl font-semibold text-zinc-100 tracking-tight">Bercy</h1>
-        <!-- <div class="text-right">
-          <p class="text-xs text-zinc-500 uppercase tracking-tighter">Project Health</p>
-          <p class="text-sm text-zinc-300 font-mono">Optimized &bull; 94%</p>
-        </div> -->
       </header>
 
-      <!-- Main Interface Card -->
       <section
         class="bg-zinc-900 border border-zinc-800/50 rounded-2xl overflow-hidden flex flex-col flex-1"
       >
-        <!-- Navigation Tabs -->
         <nav class="flex border-b border-zinc-800/50 bg-zinc-900/50">
           <button
             id="tab-unused"
@@ -169,9 +162,7 @@
           >
             Unused Files
             <span class="text-zinc-500 font-normal">(<span id="unused-files-count">0</span>)</span>
-            <!-- <span id="unused-files-count" class="text-zinc-500 font-normal">0</span> -->
             <span id="unused-count" class="hidden"></span>
-            <!-- Preserving requested ID -->
           </button>
           <button
             id="tab-ignored"
@@ -181,7 +172,6 @@
           </button>
         </nav>
 
-        <!-- Contextual Action Bar -->
         <div
           class="px-4 py-4 flex items-center justify-between bg-zinc-900/30 border-b border-zinc-800/30 sticky top-0 z-10"
         >
@@ -221,12 +211,9 @@
           </div>
         </div>
 
-        <!-- File List Viewport -->
         <div class="flex-1 overflow-hidden" id="file-list-viewport">
           <ul id="unused-files-container" class="divide-y divide-zinc-800/40">
             <li class="hidden" id="file-list"></li>
-            <!-- Preserving requested ID -->
-
             <!-- Skeletons -->
             <li
               class="group flex items-center justify-between px-4 py-4 hover:bg-zinc-800/30 transition-colors animate-pulse loading-skeleton"
@@ -276,13 +263,12 @@
         <!-- Empty State -->
         <div
           id="empty-state"
-          class="hidden flex-col items-center justify-center h-64 border-2 border-dashed border-emerald-500/10 rounded-xl m-6"
+          class="hidden flex flex-col items-center justify-center h-64 border-2 border-dashed border-emerald-500/10 rounded-xl m-6"
         >
           <p class="text-emerald-400 text-sm font-medium">Workspace is clean</p>
           <p class="text-zinc-600 text-xs mt-1">No unused files were found in this directory.</p>
         </div>
 
-        <!-- Footer Status -->
         <footer
           class="px-6 py-3 border-t border-zinc-800/50 bg-zinc-900/50 flex justify-between items-center text-[11px] uppercase tracking-widest text-zinc-600"
         >
@@ -309,6 +295,7 @@
       </div>
     </main>
 
+    <!-- Confirmation Modal -->
     <div
       id="delete-modal"
       class="fixed inset-0 z-[60] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300"
@@ -378,8 +365,6 @@
         }
       }
 
-      // Call this immediately when the page loads
-
       async function init() {
         try {
           const res = await fetch("/api/knip");
@@ -434,7 +419,6 @@
           });
         } catch (err) {
           console.log(err);
-          // alert("Failed to load files.");
         } finally {
           skeletons.forEach((skeleton) => {
             skeleton.classList.remove("flex");
@@ -522,7 +506,6 @@
             if (typeof deleteFile === "function") {
               deleteFile(file, btn);
             } else {
-              // Mock cleanup for preview
               const li = btn.closest("li");
               if (li) li.remove();
               const toast = document.getElementById("toast-container");
@@ -540,7 +523,6 @@
         );
       }
 
-      // 2. Individual Checkbox Toggle
       function toggleFileSelection(filePath, isChecked) {
         if (isChecked) {
           selectedFiles.add(filePath);
@@ -551,56 +533,46 @@
         updateBulkDeleteButton();
       }
 
-      // 3. The "Select All" Master Toggle
       function toggleSelectAll(masterCheckbox) {
         const isChecked = masterCheckbox.checked;
         const individualCheckboxes = document.querySelectorAll(".file-checkbox");
 
-        selectedFiles.clear(); // Clear existing selections
+        selectedFiles.clear();
 
         if (isChecked) {
-          // Add all currently displayed unused files to the Set
-          // (Assuming 'unusedFiles' is your array of current files)
           unusedFiles.forEach((file) => selectedFiles.add(file));
         }
 
-        // Visually check/uncheck every checkbox in the list
         individualCheckboxes.forEach((cb) => (cb.checked = isChecked));
 
         updateBulkDeleteButton();
       }
 
-      // 4. Update the Master Checkbox State (if user clicks them one by one)
       function updateSelectAllUI() {
         const masterCheckbox = document.getElementById("selectAllCheckbox");
         if (!masterCheckbox) return;
 
-        // Check the master box ONLY if the total selected matches the total available
         masterCheckbox.checked =
           unusedFiles.length > 0 && selectedFiles.size === unusedFiles.length;
       }
 
-      // 5. Update the Bulk Delete Button Visuals
       function updateBulkDeleteButton() {
         if (!bulkDeleteButton) return;
 
         if (selectedFiles.size > 0) {
           bulkDeleteButton.disabled = false;
           bulkDeleteSelectedCount.innerText = `(${selectedFiles.size})`;
-          // Active Red Styling
           bulkDeleteButton.className =
             "px-4 py-1.5 text-xs font-medium rounded-md transition-all border border-red-500/20 text-red-400 bg-red-500/5 hover:bg-red-500/15 disabled:text-zinc-500 disabled:bg-zinc-800/30 disabled:border-transparent disabled:pointer-events-none";
         } else {
           bulkDeleteButton.disabled = true;
           bulkDeleteSelectedCount.innerText = `(${selectedFiles.size})`;
-          // Disabled Gray Styling
           bulkDeleteButton.className =
             "px-4 py-1.5 text-xs font-medium rounded-md transition-all border border-red-500/20 text-red-400 bg-red-500/5 hover:bg-red-500/15 disabled:text-zinc-500 disabled:bg-zinc-800/30 disabled:border-transparent disabled:pointer-events-none";
         }
       }
 
       function promptBulkDelete() {
-        // Fallback size if selectedFiles is unavailable
         let count = typeof selectedFiles !== "undefined" ? selectedFiles.size : 0;
         showModal(
           "Delete Selected Files",
@@ -609,7 +581,6 @@
             if (typeof executeBulkDelete === "function") {
               executeBulkDelete();
             } else {
-              // Mock cleanup for preview
               const toast = document.getElementById("toast-container");
               const msg = document.getElementById("toast-message");
               if (toast && msg) {
@@ -625,7 +596,6 @@
         );
       }
 
-      // executes bulk delete
       async function executeBulkDelete() {
         if (selectedFiles.size === 0) return;
 
@@ -635,16 +605,13 @@
           const res = await fetch("/api/knip", {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ filePaths: filesArray }), // Send the array!
+            body: JSON.stringify({ filePaths: filesArray }),
           });
 
           if (res.ok) {
-            // 1. Remove the deleted files from your local JavaScript array
             unusedFiles = unusedFiles.filter((file) => !selectedFiles.has(file));
 
-            // 2. Remove the specific HTML rows from the DOM
             selectedFiles.forEach((file) => {
-              // Find the checkbox with this file's value, then find its parent <li>
               const checkbox = document.querySelector(`input[value="${file}"]`);
               if (checkbox) {
                 const row = checkbox.closest("li");
@@ -652,7 +619,6 @@
               }
             });
 
-            // 3. Update the total count in the header
             const countElement = document.getElementById("unused-count");
             if (countElement) {
               countElement.innerText = unusedFiles.length;
@@ -667,12 +633,10 @@
               );
             }
 
-            // 4. Clear the selections and reset the UI buttons
             selectedFiles.clear();
             updateSelectAllUI();
             updateBulkDeleteButton();
 
-            // 5. Check if we just deleted the very last file!
             if (unusedFiles.length === 0) {
               document.getElementById("file-list").classList.add("hidden");
               document.getElementById("empty-state").classList.remove("hidden");
