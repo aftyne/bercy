@@ -23,5 +23,13 @@
   "type": "commonjs",
   "dependencies": {
     "express": "^5.2.1"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aftyne/bercy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aftyne/bercy/issues"
+  },
+  "homepage": "https://github.com/aftyne/bercy#readme"
 }
