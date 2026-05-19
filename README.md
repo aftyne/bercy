@@ -21,7 +21,7 @@ Built on top of the powerful [Knip](https://knip.dev/) engine, Bercy spins up a 
 You do not need to install Bercy globally or add it to your project dependencies. Simply run it directly in the root of your target project using `npx`:
 
 ```bash
-npx bercy
+npx @aftyne/bercy
 
 ```
 
@@ -33,10 +33,10 @@ This will automatically:
 
 ### Options
 
-If the default port (`3001`) is already in use by another application, you can specify a custom port using the `--port` flag:
+If the default port (`5000`) is already in use by another application, you can specify a custom port using the `--port` flag:
 
 ```bash
-npx bercy --port 8080
+npx @aftyne/bercy --port 8080
 
 ```
 
@@ -49,7 +49,7 @@ npx bercy --port 8080
 ## Tech Stack
 
 * **Backend:** Node.js, Express
-* **Frontend:** HTML, Vanilla JavaScript, TailwindCSS (CDN)
+* **Frontend:** HTML, JavaScript, TailwindCSS
 * **Core Engine:** Knip
 
 ## License
