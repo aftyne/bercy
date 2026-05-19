@@ -54,4 +54,6 @@ npx bercy --port 8080
 
 ## License
 
-[ISC License](https://www.google.com/search?q=LICENSE)
+[MIT](https://opensource.org/licenses/MIT)
+
+Copyright (c) 2026-present, Ahmad Dwi Aftiyan (aftyne)
