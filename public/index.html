@@ -159,16 +159,18 @@
           <button
             id="tab-unused"
             class="flex-1 py-4 text-sm font-medium transition-all border-b-2 border-indigo-500 text-zinc-100"
+            onclick="switchTab('unused')"
           >
             Unused Files
             <span class="text-zinc-500 font-normal">(<span id="unused-files-count">0</span>)</span>
-            <span id="unused-count" class="hidden"></span>
           </button>
           <button
             id="tab-ignored"
             class="flex-1 py-4 text-sm font-medium transition-all border-b-2 border-transparent text-zinc-500 hover:text-zinc-300"
+            onclick="switchTab('ignored')"
           >
-            Ignored Files <span id="ignored-count" class="ml-1 text-zinc-600 font-normal">(2)</span>
+            Ignored Files
+            <span class="text-zinc-600 font-normal">(<span id="ignored-files-count">0</span>)</span>
           </button>
         </nav>
 
@@ -196,7 +198,7 @@
 
           <div class="flex items-center gap-2">
             <button
-              class="px-4 py-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-md transition-colors"
+              class="px-4 py-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-100 bg-zinc-800 rounded-md transition-colors"
             >
               Ignore All
             </button>
@@ -258,15 +260,23 @@
               </div>
             </li>
           </ul>
+          <ul id="ignored-files-container" class="divide-y divide-zinc-800/40 hidden"></ul>
         </div>
 
         <!-- Empty State -->
         <div
-          id="empty-state"
+          id="unused-empty-state"
           class="hidden flex-col items-center justify-center h-64 border-2 border-dashed border-emerald-500/10 rounded-xl m-6"
         >
           <p class="text-emerald-400 text-sm font-medium">Workspace is clean</p>
           <p class="text-zinc-600 text-xs mt-1">No unused files were found in this directory.</p>
+        </div>
+        <div
+          id="ignored-empty-state"
+          class="hidden flex-col items-center justify-center h-64 border-2 border-dashed border-zinc-700/50 rounded-xl m-6"
+        >
+          <p class="text-zinc-400 text-sm font-medium">No ignored files</p>
+          <p class="text-zinc-600 text-xs mt-1">Files you choose to ignore will appear here.</p>
         </div>
 
         <footer
@@ -335,19 +345,27 @@
     </div>
 
     <script>
+      const tabUnused = document.getElementById("tab-unused");
+      const tabIgnored = document.getElementById("tab-ignored");
       const unusedFilesContainer = document.getElementById("unused-files-container");
+      const ignoredFilesContainer = document.getElementById("ignored-files-container");
       const skeletons = document.querySelectorAll(".loading-skeleton");
       const unusedFilesCount = document.getElementById("unused-files-count");
+      const ignoredFilesCount = document.getElementById("ignored-files-count");
+      const unusedEmpty = document.getElementById("unused-empty-state");
+      const ignoredEmpty = document.getElementById("ignored-empty-state");
       const bulkDeleteButton = document.getElementById("bulkDeleteBtn");
       const bulkDeleteSelectedCount = document.getElementById("delete-selected-count");
       const statusCircle = document.getElementById("status-circle");
       const statusText = document.getElementById("status-text");
       const frameworkTarget = document.getElementById("framework-target");
+      const selectAllCheckbox = document.getElementById("selectAllCheckbox");
       const toast = document.getElementById("toast-container");
       const msg = document.getElementById("toast-message");
 
       let selectedFiles = new Set();
       let unusedFiles = [];
+      let ignoredFiles = [];
 
       async function loadProjectMetadata() {
         try {
@@ -371,13 +389,15 @@
           const data = await res.json();
 
           unusedFiles = data.files;
+          ignoredFiles = data.files.length === 0 ? [] : data.ignored;
 
-          unusedFilesCount.innerText = data.files.length;
+          unusedFilesCount.innerText = unusedFiles.length;
+          ignoredFilesCount.innerText = ignoredFiles.length;
 
           if (data.files.length === 0) {
             document.getElementById("file-list").classList.add("hidden");
-            document.getElementById("empty-state").classList.remove("hidden");
-            document.getElementById("empty-state").classList.add("flex");
+            document.getElementById("unused-empty-state").classList.remove("hidden");
+            document.getElementById("unused-empty-state").classList.add("flex");
             return;
           }
 
@@ -626,9 +646,8 @@
               }
             });
 
-            const countElement = document.getElementById("unused-count");
-            if (countElement) {
-              countElement.innerText = unusedFiles.length;
+            if (unusedFilesCount) {
+              unusedFilesCount.innerText = unusedFiles.length;
             }
 
             if (toast && msg) {
@@ -646,8 +665,8 @@
 
             if (unusedFiles.length === 0) {
               document.getElementById("file-list").classList.add("hidden");
-              document.getElementById("empty-state").classList.remove("hidden");
-              document.getElementById("empty-state").classList.add("flex");
+              document.getElementById("unused-empty-state").classList.remove("hidden");
+              document.getElementById("unused-empty-state").classList.add("flex");
             }
           } else {
             alert("Failed to delete some files.");
@@ -655,6 +674,127 @@
         } catch (err) {
           alert("Error connecting to server.");
         }
+      }
+
+      // Function for Delete, Ignore, and Restore
+      async function executeAction(actionType, filePaths = null) {
+        // If no specific paths are passed, use the bulk selection
+        const targetFiles = filePaths || Array.from(selectedFiles);
+        if (targetFiles.length === 0) return;
+
+        // Set up the specific API configurations
+        const config = {
+          delete: {
+            method: "DELETE",
+            url: "/api/knip",
+          },
+          ignore: {
+            method: "POST",
+            url: "/api/ignore",
+          },
+          restore: {
+            method: "POST",
+            url: "/api/unignore",
+          },
+        };
+
+        const { method, url, confirm } = config[actionType];
+
+        try {
+          const res = await fetch(url, {
+            method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filePaths: targetFiles }),
+          });
+
+          if (res.ok) {
+            // Optmistic UI Update: Remove the rows from the DOM instantly
+            targetFiles.forEach((file) => {
+              const checkbox = document.querySelector(`input[value="${file}"]`);
+              if (checkbox) {
+                const row = checkbox.closest("li");
+                if (row) row.remove();
+              }
+            });
+
+            // Clear selections
+            selectedFiles.clear();
+            updateSelectAllUI();
+
+            // Update UI Counters and empty states based on which tab you are in
+            // updateCountersAndEmptyStates();
+
+            // showToast(`Successfully completed: ${actionType}`);
+          } else {
+            alert(`Failed to ${actionType} files.`);
+          }
+        } catch (err) {
+          alert("Error connecting to server.");
+        }
+      }
+
+      function updateEmptyStates() {
+        const tabUnusedActive = document
+          .getElementById("tab-unused")
+          .classList.contains("border-indigo-500");
+
+        if (tabUnusedActive) {
+          ignoredEmpty.classList.add("hidden");
+          if (unusedFiles.length === 0) {
+            unusedEmpty.classList.remove("hidden");
+            unusedEmpty.classList.add("flex");
+            unusedFilesContainer.classList.add("hidden");
+          } else {
+            unusedEmpty.classList.add("hidden");
+            unusedEmpty.classList.remove("flex");
+            unusedFilesContainer.classList.remove("hidden");
+          }
+        } else {
+          unusedEmpty.classList.add("hidden");
+          if (ignoredFiles.length === 0) {
+            ignoredEmpty.classList.remove("hidden");
+            ignoredEmpty.classList.add("flex");
+            ignoredFilesContainer.classList.add("hidden");
+          } else {
+            ignoredEmpty.classList.add("hidden");
+            ignoredEmpty.classList.remove("flex");
+            ignoredFilesContainer.classList.remove("hidden");
+          }
+        }
+      }
+
+      function switchTab(tabId) {
+        const activeClasses = ["border-indigo-500", "text-zinc-100"];
+        const inactiveClasses = ["border-transparent", "text-zinc-500", "hover:text-zinc-300"];
+
+        // Reset selections when switching tabs
+        if (selectAllCheckbox) selectAllCheckbox.checked = false;
+        selectedFiles.clear();
+
+        document.querySelectorAll(".file-checkbox").forEach((cb) => (cb.checked = false));
+        if (typeof updateBulkDeleteButton === "function") updateBulkDeleteButton();
+
+        if (tabId === "unused") {
+          tabUnused.classList.remove(...inactiveClasses);
+          tabUnused.classList.add(...activeClasses);
+
+          tabIgnored.classList.remove(...activeClasses);
+          tabIgnored.classList.add(...inactiveClasses);
+
+          if (unusedFilesContainer) unusedFilesContainer.classList.remove("hidden");
+          if (ignoredFilesContainer) ignoredFilesContainer.classList.add("hidden");
+        } else {
+          tabIgnored.classList.remove(...inactiveClasses);
+          tabIgnored.classList.add(...activeClasses);
+
+          tabUnused.classList.remove(...activeClasses);
+          tabUnused.classList.add(...inactiveClasses);
+
+          if (ignoredFilesContainer) ignoredFilesContainer.classList.remove("hidden");
+          if (unusedFilesContainer) unusedFilesContainer.classList.add("hidden");
+        }
+
+        updateEmptyStates();
       }
 
       loadProjectMetadata();

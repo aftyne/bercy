@@ -34,6 +34,28 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "../public")));
 
+const IGNORE_FILE_PATH = path.join(process.cwd(), ".bercyignore");
+
+// Read ignored files
+async function getIgnoredFiles() {
+  try {
+    const data = await fs.readFile(IGNORE_FILE_PATH, "utf8");
+    return data
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+  } catch (err) {
+    return []; // File doesn't exist yet
+  }
+}
+
+// Save ignored files
+async function saveIgnoredFiles(filesArray) {
+  // Deduplicate and filter empty strings
+  const uniqueFiles = [...new Set(filesArray)].filter(Boolean);
+  await fs.writeFile(IGNORE_FILE_PATH, uniqueFiles.join("\n"), "utf8");
+}
+
 const extractFiles = (jsonString) => {
   try {
     const data = JSON.parse(jsonString);
@@ -82,8 +104,16 @@ app.get("/api/knip", async (req, res) => {
     // If Knip finds files, it exits with Code 1 and lands here.
     // We grab error.stdoutand return it as a successful response
     if (error.stdout) {
-      const unusedFiles = extractFiles(error.stdout);
-      return res.json({ files: unusedFiles });
+      const rawPaths = extractFiles(error.stdout);
+      const ignoredPaths = await getIgnoredFiles();
+
+      // Filter out anything that exists in the ignore list
+      const unusedFiles = rawPaths.filter((file) => !ignoredPaths.includes(file));
+
+      res.json({
+        files: unusedFiles,
+        ignored: ignoredPaths, // Send the ignored list to the frontend too!
+      });
     }
 
     // Only throw an actual 500 error if Knip completely failed to run
@@ -106,7 +136,7 @@ app.delete("/api/knip", async (req, res) => {
 
     let deletedCount = 0;
 
-    // 2. Loop through the array and physically delete them
+    // Loop through the array and physically delete them
     for (let file of pathsToDelete) {
       // Strip out null bytes and ensure the path is just a string
       if (typeof file !== "string" || file.includes("\0")) continue;
@@ -138,6 +168,7 @@ app.delete("/api/knip", async (req, res) => {
   }
 });
 
+// GET: Framework target
 app.get("/api/meta", async (req, res) => {
   try {
     const packageJsonPath = path.join(process.cwd(), "package.json");
@@ -175,6 +206,29 @@ app.get("/api/meta", async (req, res) => {
   } catch (error) {
     res.json({ projectName: "Unknown Project", framework: "Unknown", version: "0.0.0" });
   }
+});
+
+// Add files to .bercyignore
+app.post("/api/ignore", async (req, res) => {
+  const { filePaths } = req.body;
+  if (!Array.isArray(filePaths)) return res.status(400).json({ error: "Invalid payload" });
+
+  const currentIgnored = await getIgnoredFiles();
+  await saveIgnoredFiles([...currentIgnored, ...filePaths]);
+
+  res.json({ success: true });
+});
+
+// Remove files from .bercyignore (Restore)
+app.post("/api/unignore", async (req, res) => {
+  const { filePaths } = req.body;
+  if (!Array.isArray(filePaths)) return res.status(400).json({ error: "Invalid payload" });
+
+  const currentIgnored = await getIgnoredFiles();
+  const updatedIgnored = currentIgnored.filter((file) => !filePaths.includes(file));
+
+  await saveIgnoredFiles(updatedIgnored);
+  res.json({ success: true });
 });
 
 // Start the server
