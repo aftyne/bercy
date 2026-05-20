@@ -11,7 +11,7 @@ const app = express();
 const args = process.argv.slice(2);
 const portIndex = args.indexOf("--port");
 
-// If --port exists and has a value, use it. Otherwise, default to 3001.
+// If --port exists and has a value, use it. Otherwise, default to 5000.
 const PORT = portIndex !== -1 && args[portIndex + 1] ? parseInt(args[portIndex + 1], 10) : 5000;
 
 // Block cross-site requests
