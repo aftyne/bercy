@@ -198,9 +198,13 @@
 
           <div class="flex items-center gap-2">
             <button
-              class="px-4 py-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-100 bg-zinc-800 rounded-md transition-colors"
+              id="bulkIgnoreBtn"
+              onclick="promptBulkIgnore()"
+              class="px-4 py-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-100 bg-zinc-800 rounded-md transition-colors disabled:text-zinc-500 disabled:bg-zinc-800/30 disabled:border-transparent disabled:pointer-events-none"
+              disabled
             >
-              Ignore All
+              Ignore Selected
+              <span id="ignore-selected-count" class="ml-1">(0)</span>
             </button>
             <button
               id="bulkDeleteBtn"
@@ -307,39 +311,38 @@
 
     <!-- Confirmation Modal -->
     <div
-      id="delete-modal"
+      id="action-modal"
       class="fixed inset-0 z-[60] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300"
     >
       <div class="absolute inset-0 bg-zinc-950/80" id="delete-modal-backdrop"></div>
       <div
         class="relative bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-sm transform scale-95 transition-transform duration-300"
-        id="delete-modal-panel"
+        id="action-modal-panel"
       >
         <div class="flex items-center gap-3 mb-4">
           <div
             class="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20 shrink-0"
+            id="action-modal-icon-bg"
           >
-            <span class="material-symbols-outlined text-red-400 text-xl">warning</span>
+            <span class="material-symbols-outlined text-red-400 text-xl" id="action-modal-icon"
+              >warning</span
+            >
           </div>
-          <h3 class="text-lg font-semibold text-zinc-100" id="delete-modal-title">Delete File</h3>
+          <h3 class="text-lg font-semibold text-zinc-100" id="action-modal-title"></h3>
         </div>
-        <p class="text-sm text-zinc-400 mb-6" id="delete-modal-message">
-          Are you sure you want to delete this file? This action cannot be undone.
-        </p>
+        <p class="text-sm text-zinc-400 mb-6" id="action-modal-message"></p>
         <div class="flex items-center justify-end gap-3">
           <button
-            id="delete-modal-cancel"
+            id="action-modal-cancel"
             onclick="hideModal()"
             class="px-4 py-2 text-sm font-medium text-zinc-300 hover:text-zinc-100 bg-zinc-800/50 hover:bg-zinc-800 rounded-lg transition-colors border border-transparent hover:border-zinc-700"
           >
             Cancel
           </button>
           <button
-            id="delete-modal-confirm"
+            id="action-modal-confirm"
             class="px-4 py-2 text-sm font-medium text-white bg-red-500/80 hover:bg-red-500 rounded-lg transition-colors border border-red-600"
-          >
-            Delete
-          </button>
+          ></button>
         </div>
       </div>
     </div>
@@ -354,6 +357,8 @@
       const ignoredFilesCount = document.getElementById("ignored-files-count");
       const unusedEmpty = document.getElementById("unused-empty-state");
       const ignoredEmpty = document.getElementById("ignored-empty-state");
+      const bulkIgnoreButton = document.getElementById("bulkIgnoreBtn");
+      const bulkIgnoreSelectedCount = document.getElementById("ignore-selected-count");
       const bulkDeleteButton = document.getElementById("bulkDeleteBtn");
       const bulkDeleteSelectedCount = document.getElementById("delete-selected-count");
       const statusCircle = document.getElementById("status-circle");
@@ -366,6 +371,18 @@
       let selectedFiles = new Set();
       let unusedFiles = [];
       let ignoredFiles = [];
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const backdrop = document.getElementById("delete-modal-backdrop");
+        if (backdrop) backdrop.addEventListener("click", hideModal);
+
+        const confirmBtn = document.getElementById("delete-modal-confirm");
+        if (confirmBtn)
+          confirmBtn.addEventListener("click", () => {
+            if (confirmActionCallback) confirmActionCallback();
+            hideModal();
+          });
+      });
 
       async function loadProjectMetadata() {
         try {
@@ -428,6 +445,8 @@
               <button
                 class="font-button-text text-button-text text-on-surface-variant border border-border-subtle rounded-lg px-3 py-1.5 hover:bg-item-hover hover:text-primary transition-colors"
                 title="Ignore file"
+                onclick="promptIgnoreFile('${file}', this)"
+
               >
                 <span class="material-symbols-outlined text-[18px] leading-none block"
                   >visibility_off</span
@@ -460,12 +479,44 @@
 
       let confirmActionCallback = null;
 
-      function showModal(title, message, onConfirm) {
-        const modal = document.getElementById("delete-modal");
-        const panel = document.getElementById("delete-modal-panel");
-        document.getElementById("delete-modal-title").innerText = title;
-        document.getElementById("delete-modal-message").innerText = message;
+      function showModal(title, message, type, onConfirm) {
+        const modal = document.getElementById("action-modal");
+        const panel = document.getElementById("action-modal-panel");
+        const iconBg = document.getElementById("action-modal-icon-bg");
+        const icon = document.getElementById("action-modal-icon");
+        const confirmBtn = document.getElementById("action-modal-confirm");
+
+        document.getElementById("action-modal-title").innerText = title;
+        document.getElementById("action-modal-message").innerText = message;
         confirmActionCallback = onConfirm;
+
+        iconBg.className =
+          "w-10 h-10 rounded-full flex items-center justify-center border shrink-0 ";
+        confirmBtn.className =
+          "px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors border ";
+
+        if (type === "delete") {
+          iconBg.className += "bg-red-500/10 border-red-500/20";
+          icon.className = "material-symbols-outlined text-red-400 text-xl";
+          icon.innerText = "warning";
+          confirmBtn.className +=
+            "bg-red-500/80 hover:bg-red-500 border-red-600 shadow-[0_0_15px_rgba(239,68,68,0.2)]";
+          confirmBtn.innerText = "Delete";
+        } else if (type === "ignore") {
+          iconBg.className += "bg-amber-500/10 border-amber-500/20";
+          icon.className = "material-symbols-outlined text-amber-400 text-xl";
+          icon.innerText = "visibility_off";
+          confirmBtn.className +=
+            "bg-amber-500/80 hover:bg-amber-500 border-amber-600 shadow-[0_0_15px_rgba(245,158,11,0.2)]";
+          confirmBtn.innerText = "Ignore";
+        } else if (type === "restore") {
+          iconBg.className += "bg-emerald-500/10 border-emerald-500/20";
+          icon.className = "material-symbols-outlined text-emerald-400 text-xl";
+          icon.innerText = "settings_backup_restore";
+          confirmBtn.className +=
+            "bg-emerald-500/80 hover:bg-emerald-500 border-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.2)]";
+          confirmBtn.innerText = "Restore";
+        }
 
         modal.classList.remove("opacity-0", "pointer-events-none");
         panel.classList.remove("scale-95");
@@ -473,8 +524,8 @@
       }
 
       function hideModal() {
-        const modal = document.getElementById("delete-modal");
-        const panel = document.getElementById("delete-modal-panel");
+        const modal = document.getElementById("action-modal");
+        const panel = document.getElementById("action-modal-panel");
 
         modal.classList.add("opacity-0", "pointer-events-none");
         panel.classList.remove("scale-100");
@@ -482,17 +533,47 @@
         confirmActionCallback = null;
       }
 
-      document.addEventListener("DOMContentLoaded", () => {
-        const backdrop = document.getElementById("delete-modal-backdrop");
-        if (backdrop) backdrop.addEventListener("click", hideModal);
-
-        const confirmBtn = document.getElementById("delete-modal-confirm");
-        if (confirmBtn)
-          confirmBtn.addEventListener("click", () => {
-            if (confirmActionCallback) confirmActionCallback();
-            hideModal();
+      async function deleteFile(filePath, btnElement) {
+        try {
+          const res = await fetch("/api/ignore", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filePath }),
           });
-      });
+
+          if (res.ok) {
+            btnElement.closest("li").remove();
+            unusedFilesCount.innerText = parseInt(unusedFilesCount.innerText) - 1;
+
+            const li = btnElement.closest("li");
+            if (li) li.remove();
+
+            if (toast && msg) {
+              msg.innerText = filePath.split("/").pop() + " ignored";
+              toast.classList.remove("opacity-0", "pointer-events-none", "translate-y-4");
+              setTimeout(
+                () => toast.classList.add("opacity-0", "pointer-events-none", "translate-y-4"),
+                3000,
+              );
+            }
+          } else {
+            alert("Failed to delete file.");
+          }
+        } catch (err) {
+          alert("Error connecting to server.");
+        }
+      }
+
+      function promptIgnoreFile(file, btn) {
+        showModal(
+          "Ignore File",
+          `Are you sure you want to ignore ${file.split("/").pop()}?`,
+          "ignore",
+          () => {
+            ignoreFile(file, btn);
+          },
+        );
+      }
 
       async function deleteFile(filePath, btnElement) {
         try {
@@ -529,6 +610,7 @@
         showModal(
           "Delete File",
           `Are you sure you want to delete "${file.split("/").pop()}"? This action cannot be undone.`,
+          "delete",
           () => {
             if (typeof deleteFile === "function") {
               deleteFile(file, btn);
@@ -558,6 +640,7 @@
         }
         updateSelectAllUI();
         updateBulkDeleteButton();
+        updateBulkIgnoreButton();
       }
 
       function toggleSelectAll(masterCheckbox) {
@@ -573,6 +656,7 @@
         individualCheckboxes.forEach((cb) => (cb.checked = isChecked));
 
         updateBulkDeleteButton();
+        updateBulkIgnoreButton();
       }
 
       function updateSelectAllUI() {
@@ -599,11 +683,28 @@
         }
       }
 
+      function updateBulkIgnoreButton() {
+        if (!bulkIgnoreButton) return;
+
+        if (selectedFiles.size > 0) {
+          bulkIgnoreButton.disabled = false;
+          bulkIgnoreSelectedCount.innerText = `(${selectedFiles.size})`;
+          bulkIgnoreButton.className =
+            "px-4 py-1.5 text-xs font-medium rounded-md transition-all border border-zinc-500/20 text-zinc-400 bg-zinc-500/5 hover:bg-zinc-500/15 disabled:text-zinc-500 disabled:bg-zinc-800/30 disabled:border-transparent disabled:pointer-events-none";
+        } else {
+          bulkIgnoreButton.disabled = true;
+          bulkIgnoreSelectedCount.innerText = `(${selectedFiles.size})`;
+          bulkIgnoreButton.className =
+            "px-4 py-1.5 text-xs font-medium rounded-md transition-all border border-red-500/20 text-red-400 bg-red-500/5 hover:bg-red-500/15 disabled:text-zinc-500 disabled:bg-zinc-800/30 disabled:border-transparent disabled:pointer-events-none";
+        }
+      }
+
       function promptBulkDelete() {
         let count = typeof selectedFiles !== "undefined" ? selectedFiles.size : 0;
         showModal(
           "Delete Selected Files",
           `Are you sure you want to delete ${count} file${count === 1 ? "" : "s"}? This action cannot be undone.`,
+          "delete",
           () => {
             if (typeof executeBulkDelete === "function") {
               executeBulkDelete();
@@ -676,63 +777,6 @@
         }
       }
 
-      // Function for Delete, Ignore, and Restore
-      async function executeAction(actionType, filePaths = null) {
-        // If no specific paths are passed, use the bulk selection
-        const targetFiles = filePaths || Array.from(selectedFiles);
-        if (targetFiles.length === 0) return;
-
-        // Set up the specific API configurations
-        const config = {
-          delete: {
-            method: "DELETE",
-            url: "/api/knip",
-          },
-          ignore: {
-            method: "POST",
-            url: "/api/ignore",
-          },
-          restore: {
-            method: "POST",
-            url: "/api/unignore",
-          },
-        };
-
-        const { method, url, confirm } = config[actionType];
-
-        try {
-          const res = await fetch(url, {
-            method,
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ filePaths: targetFiles }),
-          });
-
-          if (res.ok) {
-            // Optmistic UI Update: Remove the rows from the DOM instantly
-            targetFiles.forEach((file) => {
-              const checkbox = document.querySelector(`input[value="${file}"]`);
-              if (checkbox) {
-                const row = checkbox.closest("li");
-                if (row) row.remove();
-              }
-            });
-
-            // Clear selections
-            selectedFiles.clear();
-            updateSelectAllUI();
-
-            // Update UI Counters and empty states based on which tab you are in
-            // updateCountersAndEmptyStates();
-
-            // showToast(`Successfully completed: ${actionType}`);
-          } else {
-            alert(`Failed to ${actionType} files.`);
-          }
-        } catch (err) {
-          alert("Error connecting to server.");
-        }
-      }
-
       function updateEmptyStates() {
         const tabUnusedActive = document
           .getElementById("tab-unused")
@@ -796,6 +840,88 @@
 
         updateEmptyStates();
       }
+
+      function promptBulkIgnore() {
+        let count = typeof selectedFiles !== "undefined" ? selectedFiles.size : 0;
+        showModal(
+          "Ignore Selected Files",
+          `Are you sure you want to ignore ${count} file${count === 1 ? "" : "s"}? They will be moved to the Ignored Files list.`,
+          "ignore",
+          () => {
+            if (typeof executeBulkDelete === "function") {
+              executeBulkDelete();
+            } else {
+              const toast = document.getElementById("toast-container");
+              const msg = document.getElementById("toast-message");
+              if (toast && msg) {
+                msg.innerText = count + " files deleted";
+                toast.classList.remove("opacity-0", "pointer-events-none", "translate-y-4");
+                setTimeout(
+                  () => toast.classList.add("opacity-0", "pointer-events-none", "translate-y-4"),
+                  3000,
+                );
+              }
+            }
+          },
+        );
+      }
+
+      // Function for Delete, Ignore, and Restore
+      // async function executeAction(actionType, filePaths = null) {
+      //   // If no specific paths are passed, use the bulk selection
+      //   const targetFiles = filePaths || Array.from(selectedFiles);
+      //   if (targetFiles.length === 0) return;
+
+      //   // Set up the specific API configurations
+      //   const config = {
+      //     delete: {
+      //       method: "DELETE",
+      //       url: "/api/knip",
+      //     },
+      //     ignore: {
+      //       method: "POST",
+      //       url: "/api/ignore",
+      //     },
+      //     restore: {
+      //       method: "POST",
+      //       url: "/api/unignore",
+      //     },
+      //   };
+
+      //   const { method, url, confirm } = config[actionType];
+
+      //   try {
+      //     const res = await fetch(url, {
+      //       method,
+      //       headers: { "Content-Type": "application/json" },
+      //       body: JSON.stringify({ filePaths: targetFiles }),
+      //     });
+
+      //     if (res.ok) {
+      //       // Optmistic UI Update: Remove the rows from the DOM instantly
+      //       targetFiles.forEach((file) => {
+      //         const checkbox = document.querySelector(`input[value="${file}"]`);
+      //         if (checkbox) {
+      //           const row = checkbox.closest("li");
+      //           if (row) row.remove();
+      //         }
+      //       });
+
+      //       // Clear selections
+      //       selectedFiles.clear();
+      //       updateSelectAllUI();
+
+      //       // Update UI Counters and empty states based on which tab you are in
+      //       // updateCountersAndEmptyStates();
+
+      //       // showToast(`Successfully completed: ${actionType}`);
+      //     } else {
+      //       alert(`Failed to ${actionType} files.`);
+      //     }
+      //   } catch (err) {
+      //     alert("Error connecting to server.");
+      //   }
+      // }
 
       loadProjectMetadata();
       init();
