@@ -564,17 +564,6 @@
         }
       }
 
-      function promptIgnoreFile(file, btn) {
-        showModal(
-          "Ignore File",
-          `Are you sure you want to ignore ${file.split("/").pop()}?`,
-          "ignore",
-          () => {
-            ignoreFile(file, btn);
-          },
-        );
-      }
-
       async function deleteFile(filePath, btnElement) {
         try {
           const res = await fetch("/api/knip", {
@@ -839,6 +828,17 @@
         }
 
         updateEmptyStates();
+      }
+
+      function promptIgnoreFile(file, btn) {
+        showModal(
+          "Ignore File",
+          `Are you sure you want to ignore "${file.split("/").pop()}"?`,
+          "ignore",
+          () => {
+            ignoreFile(file, btn);
+          },
+        );
       }
 
       function promptBulkIgnore() {

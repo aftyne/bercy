@@ -110,7 +110,7 @@ app.get("/api/knip", async (req, res) => {
       // Filter out anything that exists in the ignore list
       const unusedFiles = rawPaths.filter((file) => !ignoredPaths.includes(file));
 
-      res.json({
+      return res.json({
         files: unusedFiles,
         ignored: ignoredPaths, // Send the ignored list to the frontend too!
       });
