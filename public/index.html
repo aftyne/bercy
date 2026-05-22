@@ -873,7 +873,13 @@
         selectedFiles.clear();
 
         document.querySelectorAll(".file-checkbox").forEach((cb) => (cb.checked = false));
-        if (typeof updateBulkDeleteButton === "function") updateBulkDeleteButton();
+        if (
+          typeof updateBulkDeleteButton === "function" &&
+          typeof updateBulkIgnoreButton === "function"
+        ) {
+          updateBulkIgnoreButton();
+          updateBulkDeleteButton();
+        }
 
         if (tabId === "unused") {
           tabUnused.classList.remove(...inactiveClasses);
