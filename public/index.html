@@ -633,17 +633,19 @@
       }
 
       function toggleSelectAll(masterCheckbox) {
-        const isChecked = masterCheckbox.checked;
-        const individualCheckboxes = document.querySelectorAll(".file-checkbox");
-
-        selectedFiles.clear();
-
-        if (isChecked) {
-          unusedFiles.forEach((file) => selectedFiles.add(file));
-        }
-
-        individualCheckboxes.forEach((cb) => (cb.checked = isChecked));
-
+        const tabUnusedActive = document
+          .getElementById("tab-unused")
+          .classList.contains("border-indigo-500");
+        const containerId = tabUnusedActive ? "unused-files-container" : "ignored-files-container";
+        const checkboxes = document.querySelectorAll(`#${containerId} .file-checkbox`);
+        checkboxes.forEach((cb) => {
+          cb.checked = checkbox.checked;
+          if (checkbox.checked) {
+            selectedFiles.add(cb.value);
+          } else {
+            selectedFiles.delete(cb.value);
+          }
+        });
         updateBulkDeleteButton();
         updateBulkIgnoreButton();
       }
