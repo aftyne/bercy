@@ -639,8 +639,8 @@
         const containerId = tabUnusedActive ? "unused-files-container" : "ignored-files-container";
         const checkboxes = document.querySelectorAll(`#${containerId} .file-checkbox`);
         checkboxes.forEach((cb) => {
-          cb.checked = checkbox.checked;
-          if (checkbox.checked) {
+          cb.checked = masterCheckbox.checked;
+          if (masterCheckbox.checked) {
             selectedFiles.add(cb.value);
           } else {
             selectedFiles.delete(cb.value);
