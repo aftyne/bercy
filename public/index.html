@@ -200,11 +200,20 @@
             <button
               id="bulkIgnoreBtn"
               onclick="promptBulkIgnore()"
-              class="px-4 py-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-100 bg-zinc-800 rounded-md transition-colors disabled:text-zinc-500 disabled:bg-zinc-800/30 disabled:border-transparent disabled:pointer-events-none"
+              class="px-4 py-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-100 bg-zinc-800 border rounded-md transition-colors disabled:text-zinc-500 disabled:bg-zinc-800/30 disabled:border-transparent disabled:pointer-events-none"
               disabled
             >
               Ignore Selected
               <span id="ignore-selected-count" class="ml-1">(0)</span>
+            </button>
+            <button
+              id="bulkRestoreBtn"
+              onclick="promptBulkRestore()"
+              disabled
+              class="hidden px-4 py-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-100 bg-zinc-800 border rounded-md transition-colors disabled:text-zinc-500 disabled:bg-zinc-800/30 disabled:border-transparent disabled:pointer-events-none"
+            >
+              Restore Selected
+              <span id="restore-selected-count" class="ml-1">(0)</span>
             </button>
             <button
               id="bulkDeleteBtn"
@@ -334,14 +343,11 @@
           <button
             id="action-modal-cancel"
             onclick="hideModal()"
-            class="px-4 py-2 text-sm font-medium text-zinc-300 hover:text-zinc-100 bg-zinc-800/50 hover:bg-zinc-800 rounded-lg transition-colors border border-transparent hover:border-zinc-700"
+            class="px-4 py-2 text-sm font-medium text-zinc-300 hover:text-zinc-100 bg-zinc-800/50 hover:bg-zinc-800 rounded-lg transition-colors border border-transparent hover:border-zinc-700 disabled:text-zinc-500 disabled:bg-zinc-800/30 disabled:border-transparent disabled:cursor-not-allowed"
           >
             Cancel
           </button>
-          <button
-            id="action-modal-confirm"
-            class="px-4 py-2 text-sm font-medium text-white bg-red-500/80 hover:bg-red-500 rounded-lg transition-colors border border-red-600"
-          ></button>
+          <button id="action-modal-confirm"></button>
         </div>
       </div>
     </div>
@@ -358,12 +364,16 @@
       const ignoredEmpty = document.getElementById("ignored-empty-state");
       const bulkIgnoreButton = document.getElementById("bulkIgnoreBtn");
       const bulkIgnoreSelectedCount = document.getElementById("ignore-selected-count");
+      const bulkRestoreButton = document.getElementById("bulkRestoreBtn");
+      const bulkRestoreSelectedCount = document.getElementById("restore-selected-count");
       const bulkDeleteButton = document.getElementById("bulkDeleteBtn");
       const bulkDeleteSelectedCount = document.getElementById("delete-selected-count");
       const statusCircle = document.getElementById("status-circle");
       const statusText = document.getElementById("status-text");
       const frameworkTarget = document.getElementById("framework-target");
       const selectAllCheckbox = document.getElementById("selectAllCheckbox");
+      const actionModalCancel = document.getElementById("action-modal-cancel");
+      const actionModalConfirm = document.getElementById("action-modal-confirm");
       const toast = document.getElementById("toast-container");
       const msg = document.getElementById("toast-message");
 
@@ -419,13 +429,6 @@
               >
                 <span class="material-symbols-outlined text-[18px] leading-none block">settings_backup_restore</span>
               </button>
-              <button
-                class="p-2 text-red-400 rounded-md hover:bg-red-500/10 transition-colors"
-                title="Delete file"
-                onclick="promptDeleteFile('${file}', this)"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-              </button>
             </div>
             `;
           ignoredFilesContainer.appendChild(li);
@@ -438,16 +441,10 @@
           const data = await res.json();
 
           unusedFiles = data.files;
-          ignoredFiles = data.files.length === 0 ? [] : data.ignored;
+          ignoredFiles = data.ignored ?? [];
 
           unusedFilesCount.innerText = unusedFiles.length;
           ignoredFilesCount.innerText = ignoredFiles.length;
-
-          if (data.files.length === 0) {
-            document.getElementById("unused-empty-state").classList.remove("hidden");
-            document.getElementById("unused-empty-state").classList.add("flex");
-            return;
-          }
 
           data.files.forEach((file) => {
             const li = document.createElement("li");
@@ -521,7 +518,6 @@
         if (confirmBtn)
           confirmBtn.addEventListener("click", () => {
             if (confirmActionCallback) confirmActionCallback();
-            hideModal();
           });
       });
 
@@ -539,28 +535,26 @@
         iconBg.className =
           "w-10 h-10 rounded-full flex items-center justify-center border shrink-0 ";
         confirmBtn.className =
-          "px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors border ";
+          "px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors border disabled:border-transparent disabled:cursor-not-allowed ";
 
         if (type === "delete") {
           iconBg.className += "bg-red-500/10 border-red-500/20";
           icon.className = "material-symbols-outlined text-red-400 text-xl";
           icon.innerText = "warning";
-          confirmBtn.className +=
-            "bg-red-500/80 hover:bg-red-500 border-red-600 shadow-[0_0_15px_rgba(239,68,68,0.2)]";
+          confirmBtn.className += "bg-red-500/80 hover:bg-red-500 border-red-600";
           confirmBtn.innerText = "Delete";
         } else if (type === "ignore") {
           iconBg.className += "bg-amber-500/10 border-amber-500/20";
           icon.className = "material-symbols-outlined text-amber-400 text-xl";
           icon.innerText = "visibility_off";
           confirmBtn.className +=
-            "bg-amber-500/80 hover:bg-amber-500 border-amber-600 shadow-[0_0_15px_rgba(245,158,11,0.2)]";
+            "bg-amber-500/80 hover:bg-amber-500 border-amber-600 disabled:text-zinc-500 disabled:bg-amber-800/30";
           confirmBtn.innerText = "Ignore";
         } else if (type === "restore") {
           iconBg.className += "bg-emerald-500/10 border-emerald-500/20";
           icon.className = "material-symbols-outlined text-emerald-400 text-xl";
           icon.innerText = "settings_backup_restore";
-          confirmBtn.className +=
-            "bg-emerald-500/80 hover:bg-emerald-500 border-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.2)]";
+          confirmBtn.className += "bg-emerald-500/80 hover:bg-emerald-500 border-emerald-600";
           confirmBtn.innerText = "Restore";
         }
 
@@ -579,13 +573,117 @@
         confirmActionCallback = null;
       }
 
+      async function restoreFile(filePath, btnElement) {
+        try {
+          const res = await fetch("/api/unignore", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filePaths: [filePath] }),
+          });
+
+          if (res.ok) {
+            btnElement.closest("li").remove();
+            ignoredFilesCount.innerText = parseInt(ignoredFilesCount.innerText) - 1;
+            unusedFilesCount.innerText = parseInt(unusedFilesCount.innerText) + 1;
+
+            ignoredFiles = ignoredFiles.filter((file) => file !== filePath);
+
+            const li = btnElement.closest("li");
+            if (li) li.remove();
+
+            if (toast && msg) {
+              msg.innerText = filePath.split("/").pop() + " restored";
+              toast.classList.remove("opacity-0", "pointer-events-none", "translate-y-4");
+              setTimeout(
+                () => toast.classList.add("opacity-0", "pointer-events-none", "translate-y-4"),
+                3000,
+              );
+            }
+
+            updateEmptyStates();
+          } else {
+            alert("Failed to restore file.");
+          }
+        } catch (err) {
+          alert("Error connecting to server.");
+        } finally {
+          hideModal();
+        }
+
+        updateEmptyStates();
+      }
+
+      async function executeBulkRestore() {
+        if (selectedFiles.size === 0) return;
+
+        const filesArray = Array.from(selectedFiles);
+
+        try {
+          const res = await fetch("/api/unignore", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filePaths: filesArray }),
+          });
+
+          if (res.ok) {
+            ignoredFiles = ignoredFiles.filter((file) => !selectedFiles.has(file));
+
+            selectedFiles.forEach((file) => {
+              const checkbox = document.querySelector(`input[value="${file}"]`);
+              if (checkbox) {
+                const row = checkbox.closest("li");
+                if (row) row.remove();
+              }
+            });
+
+            if (ignoredFilesCount) {
+              ignoredFilesCount.innerText = ignoredFiles.length;
+            }
+
+            if (toast && msg) {
+              msg.innerText = selectedFiles.size + " files restored";
+              toast.classList.remove("opacity-0", "pointer-events-none", "translate-y-4");
+              setTimeout(
+                () => toast.classList.add("opacity-0", "pointer-events-none", "translate-y-4"),
+                3000,
+              );
+            }
+
+            selectedFiles.clear();
+            updateSelectAllUI();
+            updateBulkDeleteButton();
+            updateBulkRestoreButton();
+          } else {
+            alert("Failed to ignore some files.");
+          }
+        } catch (err) {
+          alert("Error connecting to server.");
+        } finally {
+          hideModal();
+        }
+
+        updateEmptyStates();
+      }
+
+      function promptBulkRestore() {
+        let count = typeof selectedFiles !== "undefined" ? selectedFiles.size : 0;
+        showModal(
+          "Restore Selected Files",
+          `Are you sure you want to restore ${count} file${count === 1 ? "" : "s"}? They will be moved back to Unused Files.`,
+          "restore",
+          () => {
+            executeBulkRestore();
+          },
+        );
+      }
+
       function promptRestoreFile(file, btn) {
         showModal(
           "Restore File",
           `Are you sure you want to restore "${file.split("/").pop()}"? It will be moved back to Unused Files.`,
           "restore",
           () => {
-            console.log("This feature is not implemented yet");
+            restoreFile(file, btn);
           },
         );
       }
@@ -605,6 +703,8 @@
             const li = btnElement.closest("li");
             if (li) li.remove();
 
+            unusedFiles = unusedFiles.filter((file) => file !== filePath);
+
             if (toast && msg) {
               msg.innerText = filePath.split("/").pop() + " deleted";
               toast.classList.remove("opacity-0", "pointer-events-none", "translate-y-4");
@@ -618,7 +718,11 @@
           }
         } catch (err) {
           alert("Error connecting to server.");
+        } finally {
+          hideModal();
         }
+
+        updateEmptyStates();
       }
 
       function promptDeleteFile(file, btn) {
@@ -633,14 +737,23 @@
       }
 
       function toggleFileSelection(filePath, isChecked) {
+        const tabUnusedActive = document
+          .getElementById("tab-unused")
+          .classList.contains("border-indigo-500");
+
         if (isChecked) {
           selectedFiles.add(filePath);
         } else {
           selectedFiles.delete(filePath);
         }
         updateSelectAllUI();
-        updateBulkDeleteButton();
-        updateBulkIgnoreButton();
+
+        if (tabUnusedActive) {
+          updateBulkIgnoreButton();
+          updateBulkDeleteButton();
+        } else {
+          updateBulkRestoreButton();
+        }
       }
 
       function toggleSelectAll(masterCheckbox) {
@@ -657,8 +770,13 @@
             selectedFiles.delete(cb.value);
           }
         });
-        updateBulkDeleteButton();
-        updateBulkIgnoreButton();
+
+        if (tabUnusedActive) {
+          updateBulkIgnoreButton();
+          updateBulkDeleteButton();
+        } else {
+          updateBulkRestoreButton();
+        }
       }
 
       function updateSelectAllUI() {
@@ -701,6 +819,22 @@
         }
       }
 
+      function updateBulkRestoreButton() {
+        if (!bulkRestoreButton) return;
+
+        if (selectedFiles.size > 0) {
+          bulkRestoreButton.disabled = false;
+          bulkRestoreSelectedCount.innerText = `(${selectedFiles.size})`;
+          bulkRestoreButton.className =
+            "px-4 py-1.5 text-xs font-medium rounded-md transition-all border border-zinc-500/20 text-zinc-400 bg-zinc-500/5 hover:bg-zinc-500/15 disabled:text-zinc-500 disabled:bg-zinc-800/30 disabled:border-transparent disabled:pointer-events-none";
+        } else {
+          bulkRestoreButton.disabled = true;
+          bulkRestoreSelectedCount.innerText = `(${selectedFiles.size})`;
+          bulkRestoreButton.className =
+            "px-4 py-1.5 text-xs font-medium rounded-md transition-all border border-red-500/20 text-red-400 bg-red-500/5 hover:bg-red-500/15 disabled:text-zinc-500 disabled:bg-zinc-800/30 disabled:border-transparent disabled:pointer-events-none";
+        }
+      }
+
       function promptBulkDelete() {
         let count = typeof selectedFiles !== "undefined" ? selectedFiles.size : 0;
         showModal(
@@ -708,20 +842,7 @@
           `Are you sure you want to delete ${count} file${count === 1 ? "" : "s"}? This action cannot be undone.`,
           "delete",
           () => {
-            if (typeof executeBulkDelete === "function") {
-              executeBulkDelete();
-            } else {
-              const toast = document.getElementById("toast-container");
-              const msg = document.getElementById("toast-message");
-              if (toast && msg) {
-                msg.innerText = count + " files deleted";
-                toast.classList.remove("opacity-0", "pointer-events-none", "translate-y-4");
-                setTimeout(
-                  () => toast.classList.add("opacity-0", "pointer-events-none", "translate-y-4"),
-                  3000,
-                );
-              }
-            }
+            executeBulkDelete();
           },
         );
       }
@@ -765,18 +886,16 @@
             selectedFiles.clear();
             updateSelectAllUI();
             updateBulkDeleteButton();
-
-            if (unusedFiles.length === 0) {
-              document.getElementById("file-list").classList.add("hidden");
-              document.getElementById("unused-empty-state").classList.remove("hidden");
-              document.getElementById("unused-empty-state").classList.add("flex");
-            }
           } else {
             alert("Failed to delete some files.");
           }
         } catch (err) {
           alert("Error connecting to server.");
+        } finally {
+          hideModal();
         }
+
+        updateEmptyStates();
       }
 
       async function ignoreFile(filePath, btnElement) {
@@ -790,6 +909,8 @@
           if (res.ok) {
             btnElement.closest("li").remove();
             unusedFilesCount.innerText = parseInt(unusedFilesCount.innerText) - 1;
+
+            unusedFiles = unusedFiles.filter((file) => file !== filePath);
 
             const li = btnElement.closest("li");
             if (li) li.remove();
@@ -807,7 +928,11 @@
           }
         } catch (err) {
           alert("Error connecting to server.");
+        } finally {
+          hideModal();
         }
+
+        updateEmptyStates();
       }
 
       function promptIgnoreFile(file, btn) {
@@ -821,6 +946,58 @@
         );
       }
 
+      async function executeBulkIgnore() {
+        if (selectedFiles.size === 0) return;
+
+        const filesArray = Array.from(selectedFiles);
+
+        try {
+          const res = await fetch("/api/ignore", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filePaths: filesArray }),
+          });
+
+          if (res.ok) {
+            unusedFiles = unusedFiles.filter((file) => !selectedFiles.has(file));
+
+            selectedFiles.forEach((file) => {
+              const checkbox = document.querySelector(`input[value="${file}"]`);
+              if (checkbox) {
+                const row = checkbox.closest("li");
+                if (row) row.remove();
+              }
+            });
+
+            if (unusedFilesCount) {
+              unusedFilesCount.innerText = unusedFiles.length;
+            }
+
+            if (toast && msg) {
+              msg.innerText = selectedFiles.size + " files ignored";
+              toast.classList.remove("opacity-0", "pointer-events-none", "translate-y-4");
+              setTimeout(
+                () => toast.classList.add("opacity-0", "pointer-events-none", "translate-y-4"),
+                3000,
+              );
+            }
+
+            selectedFiles.clear();
+            updateSelectAllUI();
+            updateBulkDeleteButton();
+            updateBulkIgnoreButton();
+          } else {
+            alert("Failed to ignore some files.");
+          }
+        } catch (err) {
+          alert("Error connecting to server.");
+        } finally {
+          hideModal();
+        }
+
+        updateEmptyStates();
+      }
+
       function promptBulkIgnore() {
         let count = typeof selectedFiles !== "undefined" ? selectedFiles.size : 0;
         showModal(
@@ -828,20 +1005,7 @@
           `Are you sure you want to ignore ${count} file${count === 1 ? "" : "s"}? They will be moved to the Ignored Files list.`,
           "ignore",
           () => {
-            if (typeof executeBulkDelete === "function") {
-              executeBulkDelete();
-            } else {
-              const toast = document.getElementById("toast-container");
-              const msg = document.getElementById("toast-message");
-              if (toast && msg) {
-                msg.innerText = count + " files deleted";
-                toast.classList.remove("opacity-0", "pointer-events-none", "translate-y-4");
-                setTimeout(
-                  () => toast.classList.add("opacity-0", "pointer-events-none", "translate-y-4"),
-                  3000,
-                );
-              }
-            }
+            executeBulkIgnore();
           },
         );
       }
@@ -887,10 +1051,12 @@
         document.querySelectorAll(".file-checkbox").forEach((cb) => (cb.checked = false));
         if (
           typeof updateBulkDeleteButton === "function" &&
-          typeof updateBulkIgnoreButton === "function"
+          typeof updateBulkIgnoreButton === "function" &&
+          typeof updateBulkRestoreButton === "function"
         ) {
           updateBulkIgnoreButton();
           updateBulkDeleteButton();
+          updateBulkRestoreButton();
         }
 
         if (tabId === "unused") {
@@ -902,6 +1068,10 @@
 
           if (unusedFilesContainer) unusedFilesContainer.classList.remove("hidden");
           if (ignoredFilesContainer) ignoredFilesContainer.classList.add("hidden");
+
+          bulkRestoreButton.classList.add("hidden");
+          bulkIgnoreButton.classList.remove("hidden");
+          bulkDeleteButton.classList.remove("hidden");
         } else {
           tabIgnored.classList.remove(...inactiveClasses);
           tabIgnored.classList.add(...activeClasses);
@@ -911,6 +1081,10 @@
 
           if (ignoredFilesContainer) ignoredFilesContainer.classList.remove("hidden");
           if (unusedFilesContainer) unusedFilesContainer.classList.add("hidden");
+
+          bulkIgnoreButton.classList.add("hidden");
+          bulkDeleteButton.classList.add("hidden");
+          bulkRestoreButton.classList.remove("hidden");
         }
 
         updateEmptyStates();
