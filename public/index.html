@@ -397,6 +397,51 @@
         }
       }
 
+      function renderUnusedFiles() {
+        unusedFiles.forEach((file) => {
+          const li = document.createElement("li");
+          li.className =
+            "p-item-padding hover:bg-item-hover transition-colors group flex flex-col md:flex-row md:items-center justify-between gap-4";
+          li.innerHTML = `
+              <div class="flex items-start gap-3 w-full md:w-auto overflow-hidden">
+              <input
+                class="mt-1 rounded bg-code-block-bg border-border-subtle focus:ring-0 focus:ring-offset-0 w-4 h-4 cursor-pointer shrink-0 file-checkbox text-indigo-500 accent-indigo-500"
+                value="${file}" onchange="toggleFileSelection('${file}', this.checked)"
+                type="checkbox"
+              />
+              <div class="flex flex-col gap-1 min-w-0 w-full">
+                <div
+                  class="bg-zinc-950/50 border-zinc-800/50 rounded-md px-4 py-1 truncate w-full md:max-w-lg"
+                >
+                  <code class="font-mono text-file-path text-primary break-all"
+                    >${file}</code
+                  >
+                </div>
+              </div>
+            </div>
+            <div
+              class="flex gap-2 shrink-0 justify-end ml-7 md:ml-0"
+            >
+             <button
+                  class="p-2 text-zinc-400 rounded-md hover:bg-zinc-500/15 transition-colors"
+                  title="Ignore file"
+                  onclick="promptIgnoreFile('${file}', this)"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.956 9.956 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                </button>
+                <button
+                  class="p-2 text-red-400 rounded-md hover:bg-red-500/10 transition-colors"
+                  title="Delete file"
+                  onclick="promptDeleteFile('${file}', this)"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                </button>
+            </div>
+            `;
+          unusedFilesContainer.appendChild(li);
+        });
+      }
+
       function renderIgnoreFiles() {
         ignoredFiles.forEach((file) => {
           const li = document.createElement("li");
@@ -446,49 +491,7 @@
           unusedFilesCount.innerText = unusedFiles.length;
           ignoredFilesCount.innerText = ignoredFiles.length;
 
-          data.files.forEach((file) => {
-            const li = document.createElement("li");
-            li.className =
-              "p-item-padding hover:bg-item-hover transition-colors group flex flex-col md:flex-row md:items-center justify-between gap-4";
-            li.innerHTML = `
-              <div class="flex items-start gap-3 w-full md:w-auto overflow-hidden">
-              <input
-                class="mt-1 rounded bg-code-block-bg border-border-subtle focus:ring-0 focus:ring-offset-0 w-4 h-4 cursor-pointer shrink-0 file-checkbox text-indigo-500 accent-indigo-500"
-                value="${file}" onchange="toggleFileSelection('${file}', this.checked)"
-                type="checkbox"
-              />
-              <div class="flex flex-col gap-1 min-w-0 w-full">
-                <div
-                  class="bg-zinc-950/50 border-zinc-800/50 rounded-md px-4 py-1 truncate w-full md:max-w-lg"
-                >
-                  <code class="font-mono text-file-path text-primary break-all"
-                    >${file}</code
-                  >
-                </div>
-              </div>
-            </div>
-            <div
-              class="flex gap-2 shrink-0 justify-end ml-7 md:ml-0"
-            >
-             <button
-                  class="p-2 text-zinc-400 rounded-md hover:bg-zinc-500/15 transition-colors"
-                  title="Ignore file"
-                  onclick="promptIgnoreFile('${file}', this)"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.956 9.956 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
-                </button>
-                <button
-                  class="p-2 text-red-400 rounded-md hover:bg-red-500/10 transition-colors"
-                  title="Delete file"
-                  onclick="promptDeleteFile('${file}', this)"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                </button>
-            </div>
-            `;
-            unusedFilesContainer.appendChild(li);
-          });
-
+          renderUnusedFiles();
           renderIgnoreFiles();
 
           if (typeof updateEmptyStates === "function") {
@@ -626,6 +629,7 @@
           });
 
           if (res.ok) {
+            unusedFiles = [...unusedFiles, ...filesArray];
             ignoredFiles = ignoredFiles.filter((file) => !selectedFiles.has(file));
 
             selectedFiles.forEach((file) => {
@@ -636,9 +640,8 @@
               }
             });
 
-            if (ignoredFilesCount) {
-              ignoredFilesCount.innerText = ignoredFiles.length;
-            }
+            ignoredFilesCount.innerText = ignoredFiles.length;
+            unusedFilesCount.innerText = unusedFiles.length;
 
             if (toast && msg) {
               msg.innerText = selectedFiles.size + " files restored";
@@ -660,6 +663,7 @@
           alert("Error connecting to server.");
         } finally {
           hideModal();
+          renderUnusedFiles();
         }
 
         updateEmptyStates();
@@ -746,6 +750,7 @@
         } else {
           selectedFiles.delete(filePath);
         }
+
         updateSelectAllUI();
 
         if (tabUnusedActive) {
