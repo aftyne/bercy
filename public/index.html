@@ -438,6 +438,11 @@
                 </button>
             </div>
             `;
+          const sameElement = unusedFilesContainer.querySelector(`input[value="${file}"]`);
+          if (sameElement) sameElement.closest("li").remove();
+
+          unusedFilesContainer.appendChild(li);
+
           unusedFilesContainer.appendChild(li);
         });
       }
@@ -476,6 +481,10 @@
               </button>
             </div>
             `;
+
+          const sameElement = ignoredFilesContainer.querySelector(`input[value="${file}"]`);
+          if (sameElement) sameElement.closest("li").remove();
+
           ignoredFilesContainer.appendChild(li);
         });
       }
@@ -964,6 +973,7 @@
           });
 
           if (res.ok) {
+            ignoredFiles = [...ignoredFiles, ...filesArray];
             unusedFiles = unusedFiles.filter((file) => !selectedFiles.has(file));
 
             selectedFiles.forEach((file) => {
@@ -974,9 +984,8 @@
               }
             });
 
-            if (unusedFilesCount) {
-              unusedFilesCount.innerText = unusedFiles.length;
-            }
+            ignoredFilesCount.innerText = ignoredFiles.length;
+            unusedFilesCount.innerText = unusedFiles.length;
 
             if (toast && msg) {
               msg.innerText = selectedFiles.size + " files ignored";
@@ -998,6 +1007,7 @@
           alert("Error connecting to server.");
         } finally {
           hideModal();
+          renderIgnoreFiles();
         }
 
         updateEmptyStates();
