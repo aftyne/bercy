@@ -315,6 +315,17 @@
           <span id="toast-message">Message here</span>
         </div>
       </div>
+
+      <div class="mt-8 text-center text-zinc-500 text-[11px] uppercase tracking-widest font-medium">
+        &copy; <span id="copyright-year"></span> Aftiyan.
+        <a
+          href="https://github.com/aftyne/bercy"
+          target="_blank"
+          class="hover:text-zinc-300 ml-2 underline underline-offset-2 transition-colors"
+        >
+          View on GitHub
+        </a>
+      </div>
     </main>
 
     <!-- Confirmation Modal -->
@@ -531,6 +542,8 @@
           confirmBtn.addEventListener("click", () => {
             if (confirmActionCallback) confirmActionCallback();
           });
+
+        document.getElementById("copyright-year").textContent = new Date().getFullYear();
       });
 
       function showModal(title, message, type, onConfirm) {
