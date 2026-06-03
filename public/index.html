@@ -271,6 +271,34 @@
                 <div class="w-8 h-8 rounded-md bg-zinc-800"></div>
               </div>
             </li>
+            <li
+              class="group flex items-center justify-between px-4 py-4 hover:bg-zinc-800/30 transition-colors animate-pulse loading-skeleton"
+            >
+              <div class="flex items-start gap-4 flex-1">
+                <div class="w-4 h-4 rounded border-zinc-800 bg-zinc-950 flex-shrink-0"></div>
+                <div class="flex flex-col gap-1 w-full max-w-md">
+                  <div class="h-7 w-full bg-zinc-800 rounded-md"></div>
+                </div>
+              </div>
+              <div class="flex gap-1 opacity-50">
+                <div class="w-8 h-8 rounded-md bg-zinc-800"></div>
+                <div class="w-8 h-8 rounded-md bg-zinc-800"></div>
+              </div>
+            </li>
+            <li
+              class="group flex items-center justify-between px-4 py-4 hover:bg-zinc-800/30 transition-colors animate-pulse loading-skeleton"
+            >
+              <div class="flex items-start gap-4 flex-1">
+                <div class="w-4 h-4 rounded border-zinc-800 bg-zinc-950 flex-shrink-0"></div>
+                <div class="flex flex-col gap-1 w-full max-w-sm">
+                  <div class="h-7 w-full bg-zinc-800 rounded-md"></div>
+                </div>
+              </div>
+              <div class="flex gap-1 opacity-50">
+                <div class="w-8 h-8 rounded-md bg-zinc-800"></div>
+                <div class="w-8 h-8 rounded-md bg-zinc-800"></div>
+              </div>
+            </li>
           </ul>
           <ul id="ignored-files-container" class="divide-y divide-zinc-800/40 hidden"></ul>
         </div>
@@ -611,6 +639,7 @@
             ignoredFilesCount.innerText = parseInt(ignoredFilesCount.innerText) - 1;
             unusedFilesCount.innerText = parseInt(unusedFilesCount.innerText) + 1;
 
+            unusedFiles = [...unusedFiles, filePath];
             ignoredFiles = ignoredFiles.filter((file) => file !== filePath);
 
             const li = btnElement.closest("li");
@@ -633,6 +662,9 @@
           alert("Error connecting to server.");
         } finally {
           hideModal();
+          selectedFiles.delete(filePath);
+          updateBulkRestoreButton();
+          renderUnusedFiles();
         }
 
         updateEmptyStates();
@@ -746,6 +778,10 @@
           alert("Error connecting to server.");
         } finally {
           hideModal();
+
+          selectedFiles.delete(filePath);
+          updateBulkDeleteButton();
+          updateBulkIgnoreButton();
         }
 
         updateEmptyStates();
@@ -807,11 +843,19 @@
       }
 
       function updateSelectAllUI() {
+        const tabUnusedActive = document
+          .getElementById("tab-unused")
+          .classList.contains("border-indigo-500");
         const masterCheckbox = document.getElementById("selectAllCheckbox");
         if (!masterCheckbox) return;
 
-        masterCheckbox.checked =
-          unusedFiles.length > 0 && selectedFiles.size === unusedFiles.length;
+        if (tabUnusedActive) {
+          masterCheckbox.checked =
+            unusedFiles.length > 0 && selectedFiles.size === unusedFiles.length;
+        } else {
+          masterCheckbox.checked =
+            ignoredFiles.length > 0 && selectedFiles.size === ignoredFiles.length;
+        }
       }
 
       function updateBulkDeleteButton() {
@@ -936,7 +980,9 @@
           if (res.ok) {
             btnElement.closest("li").remove();
             unusedFilesCount.innerText = parseInt(unusedFilesCount.innerText) - 1;
+            ignoredFilesCount.innerText = parseInt(ignoredFilesCount.innerText) + 1;
 
+            ignoredFiles = [...ignoredFiles, filePath];
             unusedFiles = unusedFiles.filter((file) => file !== filePath);
 
             const li = btnElement.closest("li");
@@ -957,6 +1003,10 @@
           alert("Error connecting to server.");
         } finally {
           hideModal();
+          selectedFiles.delete(filePath);
+          updateBulkIgnoreButton();
+          updateBulkDeleteButton();
+          renderIgnoreFiles();
         }
 
         updateEmptyStates();
@@ -1117,64 +1167,7 @@
 
         updateEmptyStates();
       }
-
-      // Function for Delete, Ignore, and Restore
-      // async function executeAction(actionType, filePaths = null) {
-      //   // If no specific paths are passed, use the bulk selection
-      //   const targetFiles = filePaths || Array.from(selectedFiles);
-      //   if (targetFiles.length === 0) return;
-
-      //   // Set up the specific API configurations
-      //   const config = {
-      //     delete: {
-      //       method: "DELETE",
-      //       url: "/api/knip",
-      //     },
-      //     ignore: {
-      //       method: "POST",
-      //       url: "/api/ignore",
-      //     },
-      //     restore: {
-      //       method: "POST",
-      //       url: "/api/unignore",
-      //     },
-      //   };
-
-      //   const { method, url, confirm } = config[actionType];
-
-      //   try {
-      //     const res = await fetch(url, {
-      //       method,
-      //       headers: { "Content-Type": "application/json" },
-      //       body: JSON.stringify({ filePaths: targetFiles }),
-      //     });
-
-      //     if (res.ok) {
-      //       // Optmistic UI Update: Remove the rows from the DOM instantly
-      //       targetFiles.forEach((file) => {
-      //         const checkbox = document.querySelector(`input[value="${file}"]`);
-      //         if (checkbox) {
-      //           const row = checkbox.closest("li");
-      //           if (row) row.remove();
-      //         }
-      //       });
-
-      //       // Clear selections
-      //       selectedFiles.clear();
-      //       updateSelectAllUI();
-
-      //       // Update UI Counters and empty states based on which tab you are in
-      //       // updateCountersAndEmptyStates();
-
-      //       // showToast(`Successfully completed: ${actionType}`);
-      //     } else {
-      //       alert(`Failed to ${actionType} files.`);
-      //     }
-      //   } catch (err) {
-      //     alert("Error connecting to server.");
-      //   }
-      // }
-
+      
       loadProjectMetadata();
       init();
     </script>
