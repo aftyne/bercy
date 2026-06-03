@@ -38,7 +38,7 @@ npx @aftyne/bercy --port 8080
 ## Tech Stack
 
 * **Backend:** Node.js, Express
-* **Frontend:** HTML, Vanilla JavaScript, TailwindCSS (CDN)
+* **Frontend:** HTML, Javascript, TailwindCSS (CDN)
 * **Core Engine:** Knip
 
 ## License
