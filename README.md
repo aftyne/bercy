@@ -22,7 +22,7 @@ Built on top of the [Knip](https://knip.dev/) engine, Bercy spins up a secure lo
 
 ## Options
 
-If the default port (`3001`) is already in use, you can specify a custom port using the `--port` flag:
+If the default port (`5000`) is already in use, you can specify a custom port using the `--port` flag:
 
 ```bash
 npx @aftyne/bercy --port 8080
